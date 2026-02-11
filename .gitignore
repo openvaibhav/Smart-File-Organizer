@@ -1,0 +1,16 @@
+# Bytecode
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+.env/
+workflow_pipeline.md
+
+# Logs
+logs/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
