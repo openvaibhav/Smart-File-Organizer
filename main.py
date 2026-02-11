@@ -9,68 +9,149 @@ mod_time = []
 files = []
 folders = []
 docs = []
+ucatdocs = []
 images = []
 videos = []
 audios = []
 archives = []
-docexts = [
-  ".doc", ".docx", ".pdf", ".txt", ".rtf", ".odt",
-  ".pages", ".tex", ".wpd", ".md", ".csv",
-  ".xls", ".xlsx", ".ods", ".ppt", ".pptx", ".odp"
-]
-imgexts = (
-    ".jpg", ".jpeg", ".png", ".gif", ".bmp",
-    ".webp", ".tiff", ".tif", ".svg", ".ico",
-    ".heic", ".heif", ".avif"
-)
-vdsexts = (
-    ".mp4", ".mkv", ".avi", ".mov", ".wmv",
-    ".flv", ".webm", ".m4v", ".3gp", ".mpeg",
-    ".mpg", ".ts"
-)
-audexts = (
-    ".mp3", ".wav", ".flac", ".aac", ".ogg",
-    ".wma", ".m4a", ".alac", ".aiff", ".amr"
-)
-archexts = (
-    ".zip", ".rar", ".7z", ".tar", ".gz",
-    ".bz2", ".xz", ".iso", ".cab", ".tgz"
-)
+docexts = {
+    "text": (".txt", ".md", ".rtf"),
+    "office": (".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"),
+    "open_formats": (".odt", ".ods", ".odp"),
+    "academic": (".tex"),
+    "data": (".csv"),
+    "ebooks": (".pdf", ".epub", ".mobi", ".azw"),
+    "publishing": (".pages", ".wpd"),
+}
+doc_set = {
+    ext
+    for val in docexts.values()
+    for ext in (val if isinstance(val, tuple) else [val])
+}
+imgexts = {
+    "common": (
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"
+    ),
 
+    "print": (
+        ".tiff", ".tif"
+    ),
 
-p = Path('.')
+    "vector": (
+        ".svg"
+    ),
+
+    "icons": (
+        ".ico"
+    ),
+
+    "mobile": (
+        ".heic", ".heif", ".avif"
+    ),
+    "raw_camera": (
+    ".raw", ".cr2", ".nef", ".arw", ".dng", ".orf", ".rw2"
+    )
+}
+
+img_set = {
+    ext
+    for val in imgexts.values()
+    for ext in (val if isinstance(val, tuple) else [val])
+}
+vdsexts = {
+    "standard": (
+        ".mp4", ".mkv", ".avi", ".mov"
+    ),
+    "web": (
+        ".webm", ".flv"
+    ),
+    "platform_specific": (
+        ".wmv", ".m4v", ".3gp"
+    ),
+    "broadcast_legacy": (
+        ".mpeg", ".mpg", ".ts"
+    ),
+}
+vds_set = {
+    ext
+    for val in vdsexts.values()
+    for ext in (val if isinstance(val, tuple) else [val])
+}
+audexts = {
+    "lossy": (
+        ".mp3", ".aac", ".ogg", ".wma", ".m4a", ".amr"
+    ),
+    "lossless": (
+        ".flac", ".alac"
+    ),
+    "uncompressed_studio": (
+        ".wav", ".aiff"
+    ),
+}
+aud_set = {
+    ext
+    for val in audexts.values()
+    for ext in (val if isinstance(val, tuple) else [val])
+}
+archexts = {
+    "compressed": (
+        ".zip", ".rar", ".7z"
+    ),
+    "tar_archives": (
+        ".tar", ".tgz"
+    ),
+    "single_compressed": (
+        ".gz", ".bz2", ".xz"
+    ),
+    "disk_images": (
+        ".iso"
+    ),
+    "windows_packages": (
+        ".cab"
+    ),
+}
+arch_set = {
+    ext
+    for val in archexts.values()
+    for ext in (val if isinstance(val, tuple) else [val])
+}
+
+p = Path(".")
 
 for x in p.iterdir():
     stat = x.stat()
-    a = dict(file = x, size = stat.st_size, cr_time = datetime.datetime.fromtimestamp(stat.st_ctime), mod_time = datetime.datetime.fromtimestamp(stat.st_mtime))
+    a = dict(
+        file=x,
+        size=stat.st_size,
+        cr_time=datetime.datetime.fromtimestamp(stat.st_ctime),
+        mod_time=datetime.datetime.fromtimestamp(stat.st_mtime),
+    )
     file_records.append(a)
 
 for x in file_records:
-    if x['file'].is_file():
+    if x["file"].is_file():
         files.append(x)
-    elif x['file'].is_dir():
+    elif x["file"].is_dir():
         folders.append(x)
     else:
         unk_items.append(x)
 
 for x in files:
-    if str(x['file'].suffix).lower() in docexts:
+    ext = str(x['file'].suffix).lower()
+    if ext in doc_set:
         docs.append(x)
-    elif str(x['file'].suffix).lower() in imgexts:
+    elif ext in img_set:
         images.append(x)
-    elif str(x['file'].suffix).lower() in vdsexts:
+    elif ext in vds_set:
         videos.append(x)
-    elif str(x['file'].suffix).lower() in audexts:
+    elif ext in aud_set:
         audios.append(x)
-    elif str(x['file'].suffix).lower() in archexts:
+    elif ext in arch_set:
         archives.append(x)
     else:
-        unk_items.append(x)
+        ucatdocs.append(x)
 
 
-
-
-print(file_records)
 print(files)
 print(folders)
 print(docs)
