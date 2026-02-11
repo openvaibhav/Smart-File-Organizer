@@ -1,11 +1,9 @@
 from pathlib import Path
 import datetime
 
+p = Path(".")
 unk_items = []
 file_records = []
-size = []
-cr_time = []
-mod_time = []
 files = []
 folders = []
 docs = []
@@ -15,13 +13,52 @@ videos = []
 audios = []
 archives = []
 docexts = {
-    "text": (".txt", ".md", ".rtf"),
-    "office": (".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"),
-    "open_formats": (".odt", ".ods", ".odp"),
-    "academic": (".tex"),
-    "data": (".csv"),
-    "ebooks": (".pdf", ".epub", ".mobi", ".azw"),
-    "publishing": (".pages", ".wpd"),
+    "text": (
+        ".txt", ".rtf", ".md", ".rst"
+        ),
+    "office": (
+        ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"
+        ),
+    "open_formats": (
+        ".odt", ".ods", ".odp"
+        ),
+    "academic": (
+        ".tex",
+        ),
+    "data": (
+        ".csv",
+        ),
+    "ebooks": (
+        ".pdf", ".epub", ".mobi", ".azw"
+        ),
+    "publishing": (
+        ".pages", ".wpd"
+        ),
+    "languages": (
+        ".py", ".js", ".ts", ".java", ".c", ".cpp", ".cs",
+        ".go", ".rs", ".swift", ".kt", ".rb", ".php"
+    ),
+    "web": (
+        ".html", ".css", ".scss", ".sass", ".less"
+    ),
+    "frontend_frameworks": (
+        ".jsx", ".tsx"
+    ),
+    "data_config": (
+        ".json", ".xml", ".yaml", ".yml", ".toml"
+    ),
+    "database": (
+        ".sql",
+    ),
+    "scripting": (
+        ".sh", ".bash", ".zsh", ".ps1", ".bat", ".cmd"
+    ),
+    "build_tools": (
+        ".gradle", ".maven", ".lock"
+    ),
+    "devops": (
+        ".dockerfile", ".tf"
+    ),
 }
 doc_set = {
     ext
@@ -32,19 +69,15 @@ imgexts = {
     "common": (
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"
     ),
-
     "print": (
         ".tiff", ".tif"
     ),
-
     "vector": (
-        ".svg"
+        ".svg",
     ),
-
     "icons": (
-        ".ico"
+        ".ico",
     ),
-
     "mobile": (
         ".heic", ".heif", ".avif"
     ),
@@ -104,10 +137,10 @@ archexts = {
         ".gz", ".bz2", ".xz"
     ),
     "disk_images": (
-        ".iso"
+        ".iso",
     ),
     "windows_packages": (
-        ".cab"
+        ".cab",
     ),
 }
 arch_set = {
@@ -116,8 +149,6 @@ arch_set = {
     for ext in (val if isinstance(val, tuple) else [val])
 }
 
-p = Path(".")
-
 for x in p.iterdir():
     stat = x.stat()
     a = dict(
@@ -125,6 +156,7 @@ for x in p.iterdir():
         size=stat.st_size,
         cr_time=datetime.datetime.fromtimestamp(stat.st_ctime),
         mod_time=datetime.datetime.fromtimestamp(stat.st_mtime),
+        sub_cat=""
     )
     file_records.append(a)
 
@@ -132,6 +164,7 @@ for x in file_records:
     if x["file"].is_file():
         files.append(x)
     elif x["file"].is_dir():
+        x.update(sub_cat='folder')
         folders.append(x)
     else:
         unk_items.append(x)
@@ -139,19 +172,36 @@ for x in file_records:
 for x in files:
     ext = str(x['file'].suffix).lower()
     if ext in doc_set:
+        for key, value in docexts.items():
+            for y in value:
+                if ext == str(y):
+                    x.update(sub_cat=key)
         docs.append(x)
     elif ext in img_set:
+        for key, value in imgexts.items():
+            for y in value:
+                if ext == str(y):
+                    x.update(sub_cat=key)
         images.append(x)
     elif ext in vds_set:
+        for key, value in vdsexts.items():
+            for y in value:
+                if ext == str(y):
+                    x.update(sub_cat=key)
         videos.append(x)
     elif ext in aud_set:
+        for key, value in audexts.items():
+            for y in value:
+                if ext == str(y):
+                    x.update(sub_cat=key)
         audios.append(x)
     elif ext in arch_set:
+        for key, value in archexts.items():
+            for y in value:
+                if ext == str(y):
+                    x.update(sub_cat=key)
         archives.append(x)
     else:
+        x.update(sub_cat="uncategorized")
         ucatdocs.append(x)
 
-
-print(files)
-print(folders)
-print(docs)
