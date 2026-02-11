@@ -54,5 +54,6 @@ htmlcov/
 # Config Secrets (if any later)
 # -----------------------------
 .env.local
+test.py
 config/secrets.json
 workflow_pipeline.md
