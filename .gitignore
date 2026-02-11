@@ -1,16 +1,58 @@
-# Bytecode
+# -----------------------------
+# Python Bytecode / Cache
+# -----------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Virtual env
+# -----------------------------
+# Virtual Environments
+# -----------------------------
 venv/
 .env/
-workflow_pipeline.md
+env/
+.venv/
 
-# Logs
+# -----------------------------
+# Distribution / Build
+# -----------------------------
+build/
+dist/
+*.egg-info/
+
+# -----------------------------
+# Logs (Your organizer logs)
+# -----------------------------
 logs/
 *.log
 
-# OS junk
+# -----------------------------
+# OS Generated Files
+# -----------------------------
 .DS_Store
 Thumbs.db
+
+# -----------------------------
+# IDE / Editor Settings
+# -----------------------------
+.vscode/
+.idea/
+
+# -----------------------------
+# Temporary Files
+# -----------------------------
+tmp/
+temp/
+
+# -----------------------------
+# Test Output / Coverage
+# -----------------------------
+.coverage
+htmlcov/
+
+# -----------------------------
+# Config Secrets (if any later)
+# -----------------------------
+.env.local
+config/secrets.json
+workflow_pipeline.md
