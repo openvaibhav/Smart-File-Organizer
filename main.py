@@ -1,7 +1,11 @@
 from pathlib import Path
+import os
+import shutil
 import datetime
 
 p = Path(".")
+dest = ''
+cwd=os.getcwd()
 unk_items = []
 file_records = []
 files = []
@@ -228,3 +232,74 @@ for x in files:
         x.update(cat="Uncategorized")
         
 print(file_records)
+
+
+#Copy Files Function
+def copy_files_cur_dir():
+    for x in files:
+        file = str(x['file'])
+        if x['cat'] == 'Document':
+            temp_src = str(os.path.join(cwd, file))
+            temp_path = str(os.path.join(cwd, "__Documents"))
+            temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+            temp_dest = str(os.path.join(temp_subcat_path, file))
+            try:
+                os.mkdir(temp_path)
+                os.mkdir(temp_subcat_path)
+            except FileExistsError:
+                pass
+            shutil.copy(temp_src, temp_dest)
+        elif x['cat'] == 'Image':
+            temp_src = str(os.path.join(cwd, file))
+            temp_path = str(os.path.join(cwd, "__Images"))
+            temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+            temp_dest = str(os.path.join(temp_subcat_path, file))
+            try:
+                os.mkdir(temp_path)
+                os.mkdir(temp_subcat_path)
+            except FileExistsError:
+                pass
+            shutil.copy(temp_src, temp_dest)
+        elif x['cat'] == 'Audio':
+            temp_src = str(os.path.join(cwd, file))
+            temp_path = str(os.path.join(cwd, "__Audios"))
+            temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+            temp_dest = str(os.path.join(temp_subcat_path, file))
+            try:
+                os.mkdir(temp_path)
+                os.mkdir(temp_subcat_path)
+            except FileExistsError:
+                pass
+            shutil.copy(temp_src, temp_dest)
+        elif x['cat'] == 'Video':
+            temp_src = str(os.path.join(cwd, file))
+            temp_path = str(os.path.join(cwd, "__Videos"))
+            temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+            temp_dest = str(os.path.join(temp_subcat_path, file))
+            try:
+                os.mkdir(temp_path)
+                os.mkdir(temp_subcat_path)
+            except FileExistsError:
+                pass
+            shutil.copy(temp_src, temp_dest)
+        elif x['cat'] == 'Archive':
+            temp_src = str(os.path.join(cwd, file))
+            temp_path = str(os.path.join(cwd, "__Archives"))
+            temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+            temp_dest = str(os.path.join(temp_subcat_path, file))
+            try:
+                os.mkdir(temp_path)
+                os.mkdir(temp_subcat_path)
+            except FileExistsError:
+                pass
+            shutil.copy(temp_src, temp_dest)
+        else:
+            temp_src = str(os.path.join(cwd, file))
+            temp_path = str(os.path.join(cwd, "__Unknown"))
+            temp_dest = str(os.path.join(temp_path, file))
+            try:
+                os.mkdir(temp_path)
+            except FileExistsError:
+                pass
+            shutil.copy(temp_src, temp_dest)
+    
