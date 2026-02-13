@@ -2,9 +2,8 @@ from pathlib import Path
 import os
 import shutil
 import datetime
+import argparse
 
-p = Path(".")
-cwd=os.getcwd()
 file_records = []
 files = []
 folders = []
@@ -191,29 +190,45 @@ archive_ext_map = {
     ".cab": "windows_packages",
 }
 
-# FOR LATER USE
-
-# def source_cur_dir():
-#     p = Path.iterdir(".")
-#     return p
+def source_cur_dir():
+    p = Path(".")
+    return p
     
-# def source_other_dir(src):
-#     if os.path.exists(src):
-#         p = Path.iterdir(src)
-#         return p
-#     else:
-#         raise("Path does not exist")
+def source_other_dir(src):
+    if Path(src).exists():
+        p = Path(src)
+        return p
+    else:
+        raise Exception("Path does not exist")
 
-# def dest_cur_dir():
-#     d = Path.iterdir(".")
-#     return d
+def dest_cur_dir():
+    d = Path(".")
+    return d
     
-# def dest_other_dir(des):
-#     if os.path.exists(des):
-#         d = Path.iterdir(des)
-#         return d
-#     else:
-#         raise("Path does not exist")
+def dest_other_dir(des):
+    if Path(des).exists():
+        d = Path(des)
+        return d
+    else:
+        raise Exception("Path does not exist")
+
+parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
+parser.add_argument('--src',metavar='src',type=str,help='Input Source')
+parser.add_argument('--des',metavar='des',type=str,help='Input Destination')
+parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
+args = parser.parse_args()
+src = args.src
+des = args.des
+
+if src == None:
+    p = source_cur_dir()
+elif src != None:
+    p = source_other_dir(src)
+
+if des == None:
+    d = dest_cur_dir()
+elif des != None:
+    d = dest_other_dir(des)
 
 for x in p.iterdir():
     stat = x.stat()
@@ -261,7 +276,7 @@ def copy_files_cur_dir():
         loc = "__" + x['cat']
         try:
             temp_src = str(file)
-            temp_path = str(os.path.join(cwd, loc))
+            temp_path = str(os.path.join(des, loc))
             try:
                 os.mkdir(temp_path)
             except FileExistsError:
@@ -273,7 +288,6 @@ def copy_files_cur_dir():
                     os.mkdir(temp_subcat_path)
                 else:
                     temp_dest = str(os.path.join(temp_path, file.name))
-                    pass
             except Exception as e:
                 raise(e)
             shutil.copy(temp_src, temp_dest)
@@ -287,7 +301,7 @@ def move_files_cur_dir():
         loc = "__" + x['cat']
         try:
             temp_src = str(file)
-            temp_path = str(os.path.join(cwd, loc))
+            temp_path = str(os.path.join(des, loc))
             try:
                 os.mkdir(temp_path)
             except FileExistsError:
@@ -295,13 +309,40 @@ def move_files_cur_dir():
             try:
                 if x['sub_cat']:
                     temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+                    temp_dest = str(os.path.join(temp_subcat_path, file.name))
                     os.mkdir(temp_subcat_path)
                 else:
-                    pass
+                    temp_dest = str(os.path.join(temp_path, file.name))
             except Exception as e:
                 raise(e)
-            temp_dest = str(os.path.join(temp_subcat_path, file.name))
             shutil.move(temp_src, temp_dest)
         except Exception as e:
             raise(e)
-    
+
+#Dry Run Preview
+def dry_run_preview(des, file_record):
+    for x in file_record:
+        file = x['file']
+        if x['cat']:
+            loc = "__" + x['cat']
+        else :
+            loc = ""
+        try:
+            temp_src = str(file)
+            temp_path = str(os.path.join(des, loc))
+            try:
+                if x['sub_cat']:
+                    temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
+                    temp_dest = str(os.path.join(temp_subcat_path, file.name))
+                else:
+                    temp_dest = str(os.path.join(temp_path, file.name))
+            except Exception as e:
+                raise(e)
+            print(temp_src + " --> " + temp_dest)
+        except Exception as e:
+            raise(e)
+        
+if args.dry_run:
+    dry_run_preview(d, file_records)
+else:
+    pass
