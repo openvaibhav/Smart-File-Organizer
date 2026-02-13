@@ -3,21 +3,26 @@ import os
 import shutil
 import datetime
 import argparse
+import sys
 
+#Argparse setup
+parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
+parser.add_argument('-s','--src',metavar='src',type=str,help='Input Source')
+parser.add_argument('-d','--des',metavar='des',type=str,help='Input Destination')
+parser.add_argument('-m','--mode',metavar='mode',type=str,help='Mode of Script, Copy | Move') #for now just files
+parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
+args = parser.parse_args()
+
+#Variables and lists
 file_records = []
 files = []
 folders = []
 unk_items = []
-parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
-parser.add_argument('--src',metavar='src',type=str,help='Input Source')
-parser.add_argument('--des',metavar='des',type=str,help='Input Destination')
-parser.add_argument('--mode',metavar='mode',type=str,help='Mode of Script, Copy | Move') #for now just files
-parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
-args = parser.parse_args()
 src = args.src
 des = args.des
 mode = str(args.mode).lower()
 
+#Documents extensions
 doc_ext_map = {
     # text
     ".txt": "text",
@@ -107,6 +112,8 @@ doc_ext_map = {
     ".dockerfile": "devops",
     ".tf": "devops",
 }
+
+#Images extensions
 img_ext_map = {
     # common
     ".jpg": "common",
@@ -140,6 +147,8 @@ img_ext_map = {
     ".orf": "raw_camera",
     ".rw2": "raw_camera",
 }
+
+#Videos extensions
 video_ext_map = {
     # standard
     ".mp4": "standard",
@@ -161,6 +170,8 @@ video_ext_map = {
     ".mpg": "broadcast_legacy",
     ".ts": "broadcast_legacy",
 }
+
+#Audios extensions
 audio_ext_map = {
     # lossy
     ".mp3": "lossy",
@@ -178,6 +189,8 @@ audio_ext_map = {
     ".wav": "uncompressed_studio",
     ".aiff": "uncompressed_studio",
 }
+
+#Archives extensions
 archive_ext_map = {
     # compressed
     ".zip": "compressed",
@@ -280,6 +293,7 @@ def dry_run_preview(des, files):
     for srcc, destt in prepped_paths:
         print(f"{srcc:<{max_src_len}} --> {destt}")
 
+#Variable locations setup
 if src == None:
     p = source_cur_dir()
 elif src != None:
@@ -290,6 +304,7 @@ if des == None:
 elif des != None:
     d = dest_other_dir(des)
 
+#Collecting Metadata
 for x in p.iterdir():
     stat = x.stat()
     a = dict(
@@ -303,6 +318,7 @@ for x in p.iterdir():
     )
     file_records.append(a)
 
+#Distinguishing Files/Folders/Unk
 for x in file_records:
     if x["file"].is_file():
         x.update(type='file')
@@ -314,6 +330,7 @@ for x in file_records:
         x.update(type='unknown')
         unk_items.append(x)
 
+#Updating Category and Sub-Category of Files
 for x in files:
     ext = str(x['file'].suffix).lower()
     if ext in doc_ext_map:
@@ -329,16 +346,17 @@ for x in files:
     else:
         x.update(cat="Uncategorized")
         
-if args.dry_run:
-    dry_run_preview(d, files)
+#Main CLI
+if len(sys.argv) == 1:
+    print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
+    sys.exit(1)
 else:
-    pass
-
-if mode == "copy":
-    copy_files_cur_dir(d, files)
-elif mode == "move":
-    move_files_cur_dir(d, files)
-elif mode == "none":
-    pass
-else:
-    print("Please check the input and Try Again !")
+    if args.dry_run:
+        dry_run_preview(d, files)
+    else:
+        if mode == "copy":
+            copy_files_cur_dir(d, files)
+        elif mode == "move":
+            move_files_cur_dir(d, files)
+        else:
+            print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
