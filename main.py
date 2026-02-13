@@ -11,10 +11,12 @@ unk_items = []
 parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
 parser.add_argument('--src',metavar='src',type=str,help='Input Source')
 parser.add_argument('--des',metavar='des',type=str,help='Input Destination')
+parser.add_argument('--mode',metavar='mode',type=str,help='Mode of Script, Copy | Move') #for now just files
 parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
 args = parser.parse_args()
 src = args.src
 des = args.des
+mode = str(args.mode).lower()
 
 doc_ext_map = {
     # text
@@ -331,3 +333,12 @@ if args.dry_run:
     dry_run_preview(d, files)
 else:
     pass
+
+if mode == "copy":
+    copy_files_cur_dir(d, files)
+elif mode == "move":
+    move_files_cur_dir(d, files)
+elif mode == "none":
+    pass
+else:
+    print("Please check the input and Try Again !")
