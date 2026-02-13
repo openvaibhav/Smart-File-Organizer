@@ -8,6 +8,14 @@ file_records = []
 files = []
 folders = []
 unk_items = []
+parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
+parser.add_argument('--src',metavar='src',type=str,help='Input Source')
+parser.add_argument('--des',metavar='des',type=str,help='Input Destination')
+parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
+args = parser.parse_args()
+src = args.src
+des = args.des
+
 doc_ext_map = {
     # text
     ".txt": "text",
@@ -190,6 +198,7 @@ archive_ext_map = {
     ".cab": "windows_packages",
 }
 
+#Source initialisation
 def source_cur_dir():
     p = Path(".")
     return p
@@ -201,6 +210,7 @@ def source_other_dir(src):
     else:
         raise Exception("Path does not exist")
 
+#Destination initialisation
 def dest_cur_dir():
     d = Path(".")
     return d
@@ -211,14 +221,62 @@ def dest_other_dir(des):
         return d
     else:
         raise Exception("Path does not exist")
+    
+#Copy Files Function
+def copy_files_cur_dir(des, files):
+    for x in files:
+        file = x['file']
+        loc = f"__{x['cat']}" if x['cat'] else ""
+        try:
+            src_path = str(file)
+            dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
+            dest_path = os.path.join(dest_dir, file.name)
+            try:
+                Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            except FileExistsError as e:
+                print(f"Error creating directory: {e}")
+            shutil.copy(src_path, dest_path)
+        except Exception as e:
+            raise(e)
 
-parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
-parser.add_argument('--src',metavar='src',type=str,help='Input Source')
-parser.add_argument('--des',metavar='des',type=str,help='Input Destination')
-parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
-args = parser.parse_args()
-src = args.src
-des = args.des
+#Move Files Function
+def move_files_cur_dir(des, files):
+    for x in files:
+        file = x['file']
+        loc = f"__{x['cat']}" if x['cat'] else ""
+        try:
+            src_path = str(file)
+            dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
+            dest_path = os.path.join(dest_dir, file.name)
+            try:
+                Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            except FileExistsError as e:
+                print(f"Error creating directory: {e}")
+            shutil.move(src_path, dest_path)
+        except Exception as e:
+            raise(e)
+
+#Dry Run Preview
+def dry_run_preview(des, files):
+    prepped_paths = []
+    for x in files:
+        file = x['file']
+        loc = f"__{x['cat']}" if x['cat'] else ""
+        
+        dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
+        dest_path = os.path.join(dest_dir, file.name)
+        
+        prepped_paths.append((str(file), str(dest_path)))
+
+    if not prepped_paths:
+        return
+    
+    prepped_paths.sort(key=lambda path_pair: path_pair[1].lower())
+    
+    max_src_len = max(len(srcc) for srcc, destt in prepped_paths) + 2
+
+    for srcc, destt in prepped_paths:
+        print(f"{srcc:<{max_src_len}} --> {destt}")
 
 if src == None:
     p = source_cur_dir()
@@ -257,92 +315,19 @@ for x in file_records:
 for x in files:
     ext = str(x['file'].suffix).lower()
     if ext in doc_ext_map:
-        x.update(sub_cat=doc_ext_map[ext],cat="Document")
+        x.update(sub_cat=doc_ext_map[ext],cat="Documents")
     elif ext in img_ext_map:
-        x.update(sub_cat=img_ext_map[ext],cat="Image")
+        x.update(sub_cat=img_ext_map[ext],cat="Images")
     elif ext in audio_ext_map:
-        x.update(sub_cat=audio_ext_map[ext],cat="Audio")
+        x.update(sub_cat=audio_ext_map[ext],cat="Audios")
     elif ext in video_ext_map:
-        x.update(sub_cat=video_ext_map[ext],cat="Video")
+        x.update(sub_cat=video_ext_map[ext],cat="Videos")
     elif ext in archive_ext_map:
-        x.update(sub_cat=archive_ext_map[ext],cat="Archive")
+        x.update(sub_cat=archive_ext_map[ext],cat="Archives")
     else:
         x.update(cat="Uncategorized")
-
-#Copy Files Function
-def copy_files_cur_dir():
-    for x in files:
-        file = x['file']
-        loc = "__" + x['cat']
-        try:
-            temp_src = str(file)
-            temp_path = str(os.path.join(des, loc))
-            try:
-                os.mkdir(temp_path)
-            except FileExistsError:
-                pass
-            try:
-                if x['sub_cat']:
-                    temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
-                    temp_dest = str(os.path.join(temp_subcat_path, file.name))
-                    os.mkdir(temp_subcat_path)
-                else:
-                    temp_dest = str(os.path.join(temp_path, file.name))
-            except Exception as e:
-                raise(e)
-            shutil.copy(temp_src, temp_dest)
-        except Exception as e:
-            raise(e)
-
-#Move Files Function
-def move_files_cur_dir():
-    for x in files:
-        file = x['file']
-        loc = "__" + x['cat']
-        try:
-            temp_src = str(file)
-            temp_path = str(os.path.join(des, loc))
-            try:
-                os.mkdir(temp_path)
-            except FileExistsError:
-                pass
-            try:
-                if x['sub_cat']:
-                    temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
-                    temp_dest = str(os.path.join(temp_subcat_path, file.name))
-                    os.mkdir(temp_subcat_path)
-                else:
-                    temp_dest = str(os.path.join(temp_path, file.name))
-            except Exception as e:
-                raise(e)
-            shutil.move(temp_src, temp_dest)
-        except Exception as e:
-            raise(e)
-
-#Dry Run Preview
-def dry_run_preview(des, file_record):
-    for x in file_record:
-        file = x['file']
-        if x['cat']:
-            loc = "__" + x['cat']
-        else :
-            loc = ""
-        try:
-            temp_src = str(file)
-            temp_path = str(os.path.join(des, loc))
-            try:
-                if x['sub_cat']:
-                    temp_subcat_path = str(os.path.join(temp_path, x['sub_cat']))
-                    temp_dest = str(os.path.join(temp_subcat_path, file.name))
-                else:
-                    temp_dest = str(os.path.join(temp_path, file.name))
-            except Exception as e:
-                raise(e)
-            print(temp_src + " --> " + temp_dest)
-        except Exception as e:
-            raise(e)
         
 if args.dry_run:
-    dry_run_preview(d, file_records)
+    dry_run_preview(d, files)
 else:
     pass
