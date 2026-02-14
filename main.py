@@ -20,17 +20,17 @@ args = parser.parse_args()
 
 # Variables and lists
 files = []
-src = args.src
-des = args.des
+src = args.src if args.src else "."
+des = args.des if args.des else "."
 mode = args.mode.lower() if args.mode else None
-if args.exclude:
-    exclude_list = set(args.exclude.split(","))
-else:
-    exclude_list = set()
 
 # Extensions load from json
-with open("extensions.json", "r") as f:
-    data = json.load(f)
+try:
+    with open("extensions.json", "r") as f:
+        data = json.load(f)
+except FileNotFoundError:
+    print("Extensions json file not found")
+    sys.exit(1)
 
 doc_ext_map = data["doc_ext_map"]
 img_ext_map = data["img_ext_map"]
@@ -38,30 +38,15 @@ audio_ext_map = data["audio_ext_map"]
 video_ext_map = data["video_ext_map"]
 archive_ext_map = data["archive_ext_map"]
 categories = data["categories"]
+set_cat_dict = categories.copy()
+for key,value in set_cat_dict.items():
+    set_cat_dict[key] = f"__{value}"
+set_cat = set(set_cat_dict.values())
 
-# Source initialisation
-def source_cur_dir():
-    p = Path(".")
-    return p
-    
-def source_other_dir(src):
-    if Path(src).exists():
-        p = Path(src)
-        return p
-    else:
-        raise Exception("Path does not exist")
-
-# Destination initialisation
-def dest_cur_dir():
-    d = Path(".")
-    return d
-    
-def dest_other_dir(des):
-    if Path(des).exists():
-        d = Path(des)
-        return d
-    else:
-        raise Exception("Path does not exist")
+if args.exclude:
+    exclude_list = set_cat.union(set(args.exclude.split(",")))
+else:
+    exclude_list = set_cat
     
 # Files Iteration
 def collect_files(P,exclude_list):
@@ -86,6 +71,7 @@ def collect_files(P,exclude_list):
 def copy_move_files(mode, des, files):
     t = 0
     c = set()
+    subc = set()
     for x in files:
         file = x['file']
         loc = f"__{x['cat']}" if x['cat'] else ""
@@ -94,6 +80,8 @@ def copy_move_files(mode, des, files):
         try:
             src_path = str(file)
             dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
+            if dest_dir not in subc:
+                subc.add(dest_dir)
             dest_path = os.path.join(dest_dir, file.name)
             try:
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
@@ -109,7 +97,8 @@ def copy_move_files(mode, des, files):
         except Exception as e:
             raise(e)
     cc = len(c)
-    print(f"Sorted({strng}) {t} files into {cc} Categories to {des}")
+    subcc = len(subc)
+    print(f"Sorted({strng}) {t} files into {cc} Categories and {subcc} Subcategories to {des}")
 
 # Dry Run Preview
 def dry_run_preview(des, files):
@@ -134,15 +123,28 @@ def dry_run_preview(des, files):
         print(f"{srcc:<{max_src_len}} --> {destt}")
 
 # Variable locations setup
-if src == None:
-    p = source_cur_dir()
-elif src != None:
-    p = source_other_dir(src)
+if args.src:
+    if Path(src).exists():
+        p = Path(src)
+    else:
+        print("Path does not exist")
+        sys.exit(1)
+        
+elif not args.src:
+    p = Path(src)
 
-if des == None:
-    d = dest_cur_dir()
-elif des != None:
-    d = dest_other_dir(des)
+if args.des:
+    if Path(des).exists():
+        if Path(des).resolve().is_relative_to(Path(src).resolve()):
+            print("Destination cannot be inside Source")
+            sys.exit(1)
+        d = Path(des)
+    else:
+        print("Path does not exist")
+        sys.exit(1)
+    
+elif not args.des:
+    d = Path(des)
 
 # Collecting Metadata
 P = p.rglob("*") if args.recursive else p.iterdir()
