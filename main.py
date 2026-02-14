@@ -4,13 +4,14 @@ import shutil
 import datetime
 import argparse
 import sys
+import json
 
 #Argparse setup
 parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
-parser.add_argument('-s','--src',metavar='src',type=str,help='Input Source')
-parser.add_argument('-d','--des',metavar='des',type=str,help='Input Destination')
-parser.add_argument('-m','--mode',metavar='mode',type=str,help='Mode of Script, Copy | Move') #for now just files
-parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview')
+parser.add_argument('-s','--src',metavar='src',type=str,help='Input Source of where you want the automation to be done')
+parser.add_argument('-d','--des',metavar='des',type=str,help='Input Destination of where you want the final output')
+parser.add_argument('-m','--mode',metavar='mode',type=str,help='Mode of Script - Copy | Move') #for now just files
+parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview (No Execution)')
 args = parser.parse_args()
 
 #Variables and lists
@@ -22,196 +23,15 @@ src = args.src
 des = args.des
 mode = str(args.mode).lower()
 
-#Documents extensions
-doc_ext_map = {
-    # text
-    ".txt": "text",
-    ".rtf": "text",
-    ".md": "text",
-    ".rst": "text",
+#Extensions load from json
+with open("extensions.json", "r") as f:
+    data = json.load(f)
 
-    # office
-    ".doc": "office",
-    ".docx": "office",
-    ".xls": "office",
-    ".xlsx": "office",
-    ".ppt": "office",
-    ".pptx": "office",
-
-    # open formats
-    ".odt": "open_formats",
-    ".ods": "open_formats",
-    ".odp": "open_formats",
-
-    # academic
-    ".tex": "academic",
-
-    # data
-    ".csv": "data",
-
-    # ebooks
-    ".pdf": "ebooks",
-    ".epub": "ebooks",
-    ".mobi": "ebooks",
-    ".azw": "ebooks",
-
-    # publishing
-    ".pages": "publishing",
-    ".wpd": "publishing",
-
-    # languages
-    ".py": "languages",
-    ".js": "languages",
-    ".ts": "languages",
-    ".java": "languages",
-    ".c": "languages",
-    ".cpp": "languages",
-    ".cs": "languages",
-    ".go": "languages",
-    ".rs": "languages",
-    ".swift": "languages",
-    ".kt": "languages",
-    ".rb": "languages",
-    ".php": "languages",
-
-    # web
-    ".html": "web",
-    ".css": "web",
-    ".scss": "web",
-    ".sass": "web",
-    ".less": "web",
-
-    # frontend frameworks
-    ".jsx": "frontend_frameworks",
-    ".tsx": "frontend_frameworks",
-
-    # data/config
-    ".json": "data_config",
-    ".xml": "data_config",
-    ".yaml": "data_config",
-    ".yml": "data_config",
-    ".toml": "data_config",
-
-    # database
-    ".sql": "database",
-
-    # scripting
-    ".sh": "scripting",
-    ".bash": "scripting",
-    ".zsh": "scripting",
-    ".ps1": "scripting",
-    ".bat": "scripting",
-    ".cmd": "scripting",
-
-    # build tools
-    ".gradle": "build_tools",
-    ".maven": "build_tools",
-    ".lock": "build_tools",
-
-    # devops
-    ".dockerfile": "devops",
-    ".tf": "devops",
-}
-
-#Images extensions
-img_ext_map = {
-    # common
-    ".jpg": "common",
-    ".jpeg": "common",
-    ".png": "common",
-    ".gif": "common",
-    ".bmp": "common",
-    ".webp": "common",
-
-    # print
-    ".tiff": "print",
-    ".tif": "print",
-
-    # vector
-    ".svg": "vector",
-
-    # icons
-    ".ico": "icons",
-
-    # mobile
-    ".heic": "mobile",
-    ".heif": "mobile",
-    ".avif": "mobile",
-
-    # raw camera
-    ".raw": "raw_camera",
-    ".cr2": "raw_camera",
-    ".nef": "raw_camera",
-    ".arw": "raw_camera",
-    ".dng": "raw_camera",
-    ".orf": "raw_camera",
-    ".rw2": "raw_camera",
-}
-
-#Videos extensions
-video_ext_map = {
-    # standard
-    ".mp4": "standard",
-    ".mkv": "standard",
-    ".avi": "standard",
-    ".mov": "standard",
-
-    # web
-    ".webm": "web",
-    ".flv": "web",
-
-    # platform specific
-    ".wmv": "platform_specific",
-    ".m4v": "platform_specific",
-    ".3gp": "platform_specific",
-
-    # broadcast / legacy
-    ".mpeg": "broadcast_legacy",
-    ".mpg": "broadcast_legacy",
-    ".ts": "broadcast_legacy",
-}
-
-#Audios extensions
-audio_ext_map = {
-    # lossy
-    ".mp3": "lossy",
-    ".aac": "lossy",
-    ".ogg": "lossy",
-    ".wma": "lossy",
-    ".m4a": "lossy",
-    ".amr": "lossy",
-
-    # lossless
-    ".flac": "lossless",
-    ".alac": "lossless",
-
-    # uncompressed studio
-    ".wav": "uncompressed_studio",
-    ".aiff": "uncompressed_studio",
-}
-
-#Archives extensions
-archive_ext_map = {
-    # compressed
-    ".zip": "compressed",
-    ".rar": "compressed",
-    ".7z": "compressed",
-
-    # tar archives
-    ".tar": "tar_archives",
-    ".tgz": "tar_archives",
-
-    # single compressed
-    ".gz": "single_compressed",
-    ".bz2": "single_compressed",
-    ".xz": "single_compressed",
-
-    # disk images
-    ".iso": "disk_images",
-
-    # windows packages
-    ".cab": "windows_packages",
-}
+doc_ext_map = data[f"doc_ext_map"][0]
+img_ext_map = data[f"img_ext_map"][0]
+audio_ext_map = data[f"audio_ext_map"][0]
+video_ext_map = data[f"video_ext_map"][0]
+archive_ext_map = data[f"archive_ext_map"][0]
 
 #Source initialisation
 def source_cur_dir():
@@ -237,8 +57,10 @@ def dest_other_dir(des):
     else:
         raise Exception("Path does not exist")
     
-#Copy Files Function
-def copy_files_cur_dir(des, files):
+#Copy or Move Files Function
+def copy_move_files(mode, des, files):
+    t = 0
+    c = 0
     for x in files:
         file = x['file']
         loc = f"__{x['cat']}" if x['cat'] else ""
@@ -249,27 +71,18 @@ def copy_files_cur_dir(des, files):
             try:
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
             except FileExistsError as e:
+                c += 1
                 print(f"Error creating directory: {e}")
-            shutil.copy(src_path, dest_path)
+            if mode == "copy":
+                shutil.copy(src_path, dest_path)
+                strng = "Copied"
+            else:
+                shutil.move(src_path, dest_path)
+                strng = "Moved"
+            t += 1
         except Exception as e:
             raise(e)
-
-#Move Files Function
-def move_files_cur_dir(des, files):
-    for x in files:
-        file = x['file']
-        loc = f"__{x['cat']}" if x['cat'] else ""
-        try:
-            src_path = str(file)
-            dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
-            dest_path = os.path.join(dest_dir, file.name)
-            try:
-                Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            except FileExistsError as e:
-                print(f"Error creating directory: {e}")
-            shutil.move(src_path, dest_path)
-        except Exception as e:
-            raise(e)
+    print(f"Sorted({strng}) {t} files into {c} Categories to {des}")
 
 #Dry Run Preview
 def dry_run_preview(des, files):
@@ -354,9 +167,7 @@ else:
     if args.dry_run:
         dry_run_preview(d, files)
     else:
-        if mode == "copy":
-            copy_files_cur_dir(d, files)
-        elif mode == "move":
-            move_files_cur_dir(d, files)
+        if mode == "copy" or mode == "move":
+            copy_move_files(mode, d, files)
         else:
             print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
