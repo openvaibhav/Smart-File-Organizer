@@ -21,17 +21,19 @@ folders = []
 unk_items = []
 src = args.src
 des = args.des
-mode = str(args.mode).lower()
+mode = args.mode.lower() if args.mode else None
+
 
 #Extensions load from json
 with open("extensions.json", "r") as f:
     data = json.load(f)
 
-doc_ext_map = data[f"doc_ext_map"][0]
-img_ext_map = data[f"img_ext_map"][0]
-audio_ext_map = data[f"audio_ext_map"][0]
-video_ext_map = data[f"video_ext_map"][0]
-archive_ext_map = data[f"archive_ext_map"][0]
+doc_ext_map = data["doc_ext_map"]
+img_ext_map = data["img_ext_map"]
+audio_ext_map = data["audio_ext_map"]
+video_ext_map = data["video_ext_map"]
+archive_ext_map = data["archive_ext_map"]
+categories = data["categories"]
 
 #Source initialisation
 def source_cur_dir():
@@ -60,7 +62,6 @@ def dest_other_dir(des):
 #Copy or Move Files Function
 def copy_move_files(mode, des, files):
     t = 0
-    c = 0
     for x in files:
         file = x['file']
         loc = f"__{x['cat']}" if x['cat'] else ""
@@ -70,9 +71,8 @@ def copy_move_files(mode, des, files):
             dest_path = os.path.join(dest_dir, file.name)
             try:
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            except FileExistsError as e:
-                c += 1
-                print(f"Error creating directory: {e}")
+            except Exception as e:
+                print(f"Error Creating Folder : {e}")
             if mode == "copy":
                 shutil.copy(src_path, dest_path)
                 strng = "Copied"
@@ -82,7 +82,7 @@ def copy_move_files(mode, des, files):
             t += 1
         except Exception as e:
             raise(e)
-    print(f"Sorted({strng}) {t} files into {c} Categories to {des}")
+    print(f"Sorted({strng}) {t} files into to {des}")
 
 #Dry Run Preview
 def dry_run_preview(des, files):
@@ -147,15 +147,15 @@ for x in file_records:
 for x in files:
     ext = str(x['file'].suffix).lower()
     if ext in doc_ext_map:
-        x.update(sub_cat=doc_ext_map[ext],cat="Documents")
+        x.update(sub_cat=doc_ext_map[ext],cat=categories["doc_ext_map"])
     elif ext in img_ext_map:
-        x.update(sub_cat=img_ext_map[ext],cat="Images")
+        x.update(sub_cat=img_ext_map[ext],cat=categories["img_ext_map"])
     elif ext in audio_ext_map:
-        x.update(sub_cat=audio_ext_map[ext],cat="Audios")
+        x.update(sub_cat=audio_ext_map[ext],cat=categories["audio_ext_map"])
     elif ext in video_ext_map:
-        x.update(sub_cat=video_ext_map[ext],cat="Videos")
+        x.update(sub_cat=video_ext_map[ext],cat=categories["video_ext_map"])
     elif ext in archive_ext_map:
-        x.update(sub_cat=archive_ext_map[ext],cat="Archives")
+        x.update(sub_cat=archive_ext_map[ext],cat=categories["archive_ext_map"])
     else:
         x.update(cat="Uncategorized")
         
