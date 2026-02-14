@@ -18,12 +18,6 @@ parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Previe
 
 args = parser.parse_args()
 
-# Variables and lists
-files = []
-src = args.src if args.src else "."
-des = args.des if args.des else "."
-mode = args.mode.lower() if args.mode else None
-
 # Extensions load from json
 try:
     with open("extensions.json", "r") as f:
@@ -31,12 +25,20 @@ try:
 except FileNotFoundError:
     print("Extensions json file not found")
     sys.exit(1)
+    
+# Variables and lists
+files = []
+
+src = args.src if args.src else "."
+des = args.des if args.des else "."
+mode = args.mode.lower() if args.mode else None
 
 doc_ext_map = data["doc_ext_map"]
 img_ext_map = data["img_ext_map"]
 audio_ext_map = data["audio_ext_map"]
 video_ext_map = data["video_ext_map"]
 archive_ext_map = data["archive_ext_map"]
+
 categories = data["categories"]
 set_cat_dict = categories.copy()
 for key,value in set_cat_dict.items():
@@ -48,8 +50,16 @@ if args.exclude:
 else:
     exclude_list = set_cat
     
+# Permission Checks
+dest_ok = os.access(des, os.W_OK | os.X_OK)
+if dest_ok:
+    pass
+elif not dest_ok:
+    print(f"Please check the permissions of destination dir (To move you need write and exec permissions.)")
+    sys.exit(1)    
+    
 # Files Iteration
-def collect_files(P,exclude_list):
+def collect_files(mode, P ,exclude_list):
     forbidden = set(exclude_list)
     for x in P:
         if forbidden and any(part in forbidden for part in x.parts):
@@ -57,6 +67,17 @@ def collect_files(P,exclude_list):
         
         if x.is_file():
             stat = x.stat()
+            if args.dry_run:
+                src_ok = os.access(x, os.R_OK)
+            elif mode == "copy":
+                src_ok = os.access(x, os.R_OK)
+            elif mode == "move":
+                src_ok = os.access(x,os.W_OK | os.X_OK)
+            if src_ok:
+                pass
+            elif not src_ok:
+                print(f"Please check the permissions of {x}")
+                sys.exit(1)
             a = dict(
                 file=x,
                 size=stat.st_size,
@@ -68,7 +89,7 @@ def collect_files(P,exclude_list):
             files.append(a)
     
 # Copy or Move Files Function
-def copy_move_files(mode, des, files):
+def copy_move_files(des, mode, files):
     t = 0
     c = set()
     subc = set()
@@ -101,7 +122,7 @@ def copy_move_files(mode, des, files):
     print(f"Sorted({strng}) {t} files into {cc} Categories and {subcc} Subcategories to {des}")
 
 # Dry Run Preview
-def dry_run_preview(des, files):
+def dry_run_preview(p, des, files):
     prepped_paths = []
     for x in files:
         file = x['file']
@@ -148,7 +169,7 @@ elif not args.des:
 
 # Collecting Metadata
 P = p.rglob("*") if args.recursive else p.iterdir()
-collect_files(P, exclude_list)
+collect_files(mode, P, exclude_list)
 
 # Updating Category and Sub-Category of Files
 for x in files:
@@ -172,9 +193,9 @@ if len(sys.argv) == 1:
     sys.exit(1)
 else:
     if args.dry_run:
-        dry_run_preview(d, files)
+        dry_run_preview(p , d, files)
     else:
         if mode == "copy" or mode == "move":
-            copy_move_files(mode, d, files)
+            copy_move_files(p, d, mode, files)
         else:
             print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
