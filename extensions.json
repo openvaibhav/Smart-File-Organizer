@@ -124,6 +124,7 @@
     "img_ext_map": "Images",
     "audio_ext_map": "Audios",
     "video_ext_map": "Videos",
-    "archive_ext_map": "Archives"
+    "archive_ext_map": "Archives",
+    "uncat_ext_map": "Uncategorized"
   }
 }
