@@ -2,89 +2,219 @@
 
 A command-line utility designed to automate everyday file management tasks directly from the terminal.
 
-Smart File Organizer focuses on practical filesystem automation - organizing, categorizing, and restructuring files without relying on graphical interfaces.
+Smart File Organizer focuses on practical filesystem automation — organizing, categorizing, and restructuring files without relying on graphical interfaces.
+
+Built for developers, power users, and anyone who prefers terminal-first workflows.
 
 ---
 
 ## 🚀 Features (Current)
 
-* 📂 **Automatic File Classification**
-  Sorts files into categories based on extensions.
+### 📂 Automatic File Classification
 
-* 🧠 **Subtype Taxonomy System**
-  Files are organized not just by category, but also by subcategories
-  *(e.g., Documents → text / office / ebooks).*
+Sorts files into structured categories based on extensions.
 
-* 🗂️ **Hierarchical Folder Creation**
-  Creates structured parent folders like:
+Supported primary categories include:
 
-  ```
-  __Documents/
-  __Images/
-  __Videos/
-  ```
-
-  With subtype subfolders inside them.
-
-* 🔍 **Dry-Run Preview Mode**
-  Preview file movements before executing operations.
-
-* 📥 **Custom Source Support**
-  Organize files from any specified directory.
-
-* 📤 **Custom Destination Support**
-  Output sorted files into a separate folder.
-
-* 🧾 **Metadata Collection**
-  Tracks file size and timestamps for future logging and analysis features.
+* Documents
+* Images
+* Videos
+* Audios
+* Archives
+* Uncategorized
 
 ---
 
-## 🛠️ CLI Usage (Current)
+### 🧠 Subtype Taxonomy System
+
+Files are classified beyond top-level categories into granular subtypes.
+
+**Examples:**
 
 ```
-python organizer.py --src <source_path> --des <destination_path>
-python organizer.py --dry_run
+Documents → text / office / ebooks / code / data
+Images    → common / vector / raw_camera
+Audios    → lossy / lossless / studio
 ```
 
-| Flag        | Description                       |
-| ----------- | --------------------------------- |
-| `--src`     | Source directory to organize      |
-| `--des`     | Destination directory             |
-| `--dry_run` | Preview changes without executing |
+This enables deeper organization without manual folder creation.
+
+---
+
+### 🗂️ Hierarchical Folder Generation
+
+Automatically builds structured directories such as:
+
+```
+__Documents/
+__Images/
+__Videos/
+__Audios/
+__Archives/
+```
+
+Each containing subtype subfolders when applicable.
+
+---
+
+### 🔁 Copy / Move Execution Modes
+
+Choose how files are handled:
+
+* **Copy Mode** → Leaves originals untouched
+* **Move Mode** → Fully reorganizes source
+
+---
+
+### 🔍 Dry-Run Preview Mode
+
+Preview sorting operations before execution:
+
+* Displays source → destination mapping
+* Helps validate taxonomy + exclusions
+* Prevents accidental file movement
+
+---
+
+### 📥 Custom Source Support
+
+Organize files from any directory:
+
+```
+python organizer.py --src ~/Downloads
+```
+
+---
+
+### 📤 Custom Destination Support
+
+Output sorted files to a separate location:
+
+```
+python organizer.py --des ~/Organized
+```
+
+---
+
+### 🔁 Recursive Sorting
+
+Process files inside subfolders:
+
+```
+python organizer.py -r
+```
+
+Useful for deep cleanup of messy directories.
+
+---
+
+### 🚫 Exclusion Filters
+
+Exclude specific files or folders from sorting:
+
+```
+python organizer.py -e node_modules,.git,env
+```
+
+Prevents interference with development environments.
+
+---
+
+### 🧾 Metadata Collection Layer
+
+Each processed file records:
+
+* Size
+* Creation timestamp
+* Modification timestamp
+
+This lays groundwork for:
+
+* Logging
+* Audit trails
+* Analytics modules
+
+---
+
+## 🛠️ CLI Usage
+
+### Basic
+
+```
+python organizer.py -m copy
+```
+
+### With Source & Destination
+
+```
+python organizer.py -s <source_path> -d <destination_path> -m move
+```
+
+### Dry Run
+
+```
+python organizer.py -dr -m copy
+```
+
+### Recursive + Exclusions
+
+```
+python organizer.py -r -e node_modules,.git -m move
+```
+
+---
+
+## ⚙️ Flags Reference
+
+| Flag              | Description                     |
+| ----------------- | ------------------------------- |
+| `-s, --src`       | Source directory                |
+| `-d, --des`       | Destination directory           |
+| `-m, --mode`      | Execution mode: `copy` / `move` |
+| `-r, --recursive` | Include subfolders              |
+| `-e, --exclude`   | Exclude files/folders           |
+| `-dr, --dry_run`  | Preview execution               |
 
 ---
 
 ## 🧩 Current Module
 
-**File Organizer Engine**
+### File Organizer Engine
 
-Automatically:
+Core responsibilities:
 
-* Scans directories
-* Classifies files
-* Builds folder hierarchies
-* Copies or moves files into sorted structures
+* Directory scanning
+* File classification
+* Taxonomy mapping
+* Folder generation
+* Safe execution handling
+
+Designed as the foundation for future automation modules.
 
 ---
 
 ## 🧭 Vision
 
-Smart File Organizer aims to evolve into a broader **CLI Personal Toolbox** - a suite of lightweight terminal utilities that improve productivity and automate repetitive filesystem tasks for developers and power users.
+Smart File Organizer is evolving into a broader **CLI Personal Toolbox** — a suite of lightweight terminal utilities focused on filesystem automation.
 
-Planned expansion areas include:
+Planned expansion areas:
 
-* Logging & audit trails
-* Duplicate conflict handling
-* Recursive sorting
+* Execution logging & audit trails
+* Conflict / duplicate handling
+* Undo manifests
+* Large file sorters
+* Temp & cache cleaners
 * Configurable taxonomies
-* Plugin-style utility modules
+* Plugin-style modules
 
 ---
 
 ## 📌 Status
 
-Work in progress 🚧
+**Work in Progress 🚧**
 
-Core classification and execution engine implemented.
-Actively expanding CLI capabilities and automation features.
+Engine: Functional
+CLI Layer: Expanding
+Safety Systems: In Development
+
+Actively iterating toward a stable **v1.0 CLI automation toolkit**.
