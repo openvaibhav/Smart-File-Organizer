@@ -63,7 +63,7 @@ if args.on_collision:
     else:
         print("Collision arguement not correct, if needed default (skip) action will be done")
         on_collision = "skip"
-else:
+elif not args.on_collision:
     print("Collision arguement not provided, if needed default (skip) action will be done")
     on_collision = "skip"
     
@@ -115,7 +115,10 @@ def coll_handling(file, dest, file_h):
         chars = string.ascii_lowercase + string.digits
         random_str = file.stem + "__collision_" + ''.join(random.choices(chars, k=10)) + ext
         destn = os.path.join(dest, random_str)
-        
+        while os.path.exists(destn):
+            random_str = file.stem + "__collision_" + ''.join(random.choices(chars, k=10)) + ext
+            destn = os.path.join(dest, random_str)
+
         return destn
     else:
         return "skip"
@@ -126,6 +129,8 @@ def copy_move_files(des, mode, files, on_collision):
     t = 0
     c = set()
     subc = set()
+    strng = "Processed"
+    strng = "Copied" if mode == "copy" else "Moved"
     for x in files:
         file = x['file']
         loc = f"__{x['cat']}" if x['cat'] else ""
@@ -145,21 +150,19 @@ def copy_move_files(des, mode, files, on_collision):
                     if handler == "skip":
                         continue
                     elif handler == "overwrite":
+                        os.remove(dest_path)
                         shutil.copy(src_path, dest_path)
-                        strng = "Copied"
                         t += 1
                         if loc not in c:
                             c.add(loc)
                     else:
                         shutil.copy(src_path, handler)
                         print(f"File copied to {handler} successfully")
-                        strng = "Copied"
                         t += 1
                         if loc not in c:
                             c.add(loc)
                 else:
                     shutil.copy(src_path, dest_path)
-                    strng = "Copied"
                     t += 1
                     if loc not in c:
                         c.add(loc)
@@ -170,21 +173,19 @@ def copy_move_files(des, mode, files, on_collision):
                     if handler == "skip":
                         continue
                     elif handler == "overwrite":
+                        os.remove(dest_path)
                         shutil.move(src_path, dest_path)
-                        strng = "Moved"
                         t += 1
                         if loc not in c:
                             c.add(loc)
                     else:
                         shutil.move(src_path, handler)
                         print(f"File moved to {handler} successfully")
-                        strng = "Moved"
                         t += 1
                         if loc not in c:
                             c.add(loc)
                 else:
                     shutil.move(src_path, dest_path)
-                    strng = "Moved"
                     t += 1
                     if loc not in c:
                         c.add(loc)
@@ -195,7 +196,7 @@ def copy_move_files(des, mode, files, on_collision):
     print(f"Sorted({strng}) {t} files into {cc} Categories and {subcc} Subcategories to {des}")
 
 # Dry Run Preview
-def dry_run_preview(p, des, files):
+def dry_run_preview(on_collision, des, files):
     prepped_paths = []
     for x in files:
         file = x['file']
@@ -204,7 +205,16 @@ def dry_run_preview(p, des, files):
         dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
         dest_path = os.path.join(dest_dir, file.name)
         
-        prepped_paths.append((str(file), str(dest_path)))
+        if os.path.exists(dest_path):
+            handler = coll_handling(file, dest_dir, on_collision)
+            if handler == "skip":
+                prepped_paths.append((str(file), "Skipped"))
+            elif handler == "overwrite":
+                prepped_paths.append((str(file), str(dest_path)))
+            else:
+                prepped_paths.append((str(file), str(handler)))
+        else:
+            prepped_paths.append((str(file), str(dest_path)))
 
     if not prepped_paths:
         return
@@ -266,7 +276,7 @@ if len(sys.argv) == 1:
     sys.exit(1)
 else:
     if args.dry_run:
-        dry_run_preview(p, d, files)
+        dry_run_preview(on_collision, d, files)
     else:
         if mode == "copy" or mode == "move":
             copy_move_files(d, mode, files, on_collision)
