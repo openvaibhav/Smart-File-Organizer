@@ -2,9 +2,9 @@
 
 A command-line utility designed to automate everyday file management tasks directly from the terminal.
 
-Smart File Organizer focuses on practical filesystem automation — organizing, categorizing, and restructuring files without relying on graphical interfaces.
+Smart File Organizer focuses on practical filesystem automation : organizing, categorizing, and restructuring files without relying on graphical interfaces.
 
-Built for developers, power users, and anyone who prefers terminal-first workflows.
+Built for developers, power users, and terminal-first workflows.
 
 ---
 
@@ -14,7 +14,7 @@ Built for developers, power users, and anyone who prefers terminal-first workflo
 
 Sorts files into structured categories based on extensions.
 
-Supported primary categories include:
+**Primary categories:**
 
 * Documents
 * Images
@@ -23,13 +23,15 @@ Supported primary categories include:
 * Archives
 * Uncategorized
 
+Classification is driven via an external JSON taxonomy system.
+
 ---
 
 ### 🧠 Subtype Taxonomy System
 
-Files are classified beyond top-level categories into granular subtypes.
+Files are further classified into granular subtypes for deeper organization.
 
-**Examples:**
+**Examples**
 
 ```
 Documents → text / office / ebooks / code / data
@@ -37,13 +39,13 @@ Images    → common / vector / raw_camera
 Audios    → lossy / lossless / studio
 ```
 
-This enables deeper organization without manual folder creation.
+This enables multi-layer sorting without manual folder creation.
 
 ---
 
 ### 🗂️ Hierarchical Folder Generation
 
-Automatically builds structured directories such as:
+Automatically builds structured directories:
 
 ```
 __Documents/
@@ -53,7 +55,7 @@ __Audios/
 __Archives/
 ```
 
-Each containing subtype subfolders when applicable.
+Subtype folders are generated dynamically during execution.
 
 ---
 
@@ -64,59 +66,64 @@ Choose how files are handled:
 * **Copy Mode** → Leaves originals untouched
 * **Move Mode** → Fully reorganizes source
 
+Execution is performed with permission validation and collision handling.
+
+---
+
+### 💥 Collision Handling Engine
+
+Handles duplicate filename conflicts at destination.
+
+Supported policies:
+
+* **Skip (default)** → Ignore duplicates
+* **Rename** → Generates unique collision filename
+* **Overwrite** → Replaces existing file
+
+Example:
+
+```
+report.pdf
+→ report__collision_x82kf91.pdf
+```
+
 ---
 
 ### 🔍 Dry-Run Preview Mode
 
-Preview sorting operations before execution:
+Preview execution before performing operations.
 
-* Displays source → destination mapping
-* Helps validate taxonomy + exclusions
-* Prevents accidental file movement
+Displays:
 
----
+* Source → Destination mapping
+* Collision outcomes
+* Skipped files
 
-### 📥 Custom Source Support
-
-Organize files from any directory:
-
-```
-python organizer.py --src ~/Downloads
-```
-
----
-
-### 📤 Custom Destination Support
-
-Output sorted files to a separate location:
-
-```
-python organizer.py --des ~/Organized
-```
+Prevents accidental filesystem changes.
 
 ---
 
 ### 🔁 Recursive Sorting
 
-Process files inside subfolders:
+Process files inside nested subfolders:
 
 ```
 python organizer.py -r
 ```
 
-Useful for deep cleanup of messy directories.
+Useful for deep directory cleanup.
 
 ---
 
 ### 🚫 Exclusion Filters
 
-Exclude specific files or folders from sorting:
+Exclude files or folders from processing:
 
 ```
 python organizer.py -e node_modules,.git,env
 ```
 
-Prevents interference with development environments.
+Organizer system folders are auto-excluded.
 
 ---
 
@@ -124,31 +131,47 @@ Prevents interference with development environments.
 
 Each processed file records:
 
-* Size
+* File size
 * Creation timestamp
 * Modification timestamp
 
-This lays groundwork for:
+This metadata layer prepares the engine for:
 
-* Logging
-* Audit trails
-* Analytics modules
+* Execution logging
+* Audit manifests
+* Undo systems
+
+---
+
+### 🔐 Permission Awareness
+
+Validates required permissions before execution:
+
+* Read → Copy / Dry-Run
+* Write + Execute → Move
+* Destination write validation
+
+Files lacking permissions are skipped safely.
 
 ---
 
 ## 🛠️ CLI Usage
 
-### Basic
+### Basic Execution
 
 ```
 python organizer.py -m copy
 ```
 
-### With Source & Destination
+---
+
+### Source + Destination
 
 ```
-python organizer.py -s <source_path> -d <destination_path> -m move
+python organizer.py -s ~/Downloads -d ~/Organized -m move
 ```
+
+---
 
 ### Dry Run
 
@@ -156,56 +179,79 @@ python organizer.py -s <source_path> -d <destination_path> -m move
 python organizer.py -dr -m copy
 ```
 
-### Recursive + Exclusions
+---
+
+### Recursive Sorting
 
 ```
-python organizer.py -r -e node_modules,.git -m move
+python organizer.py -r -m move
+```
+
+---
+
+### Exclusions
+
+```
+python organizer.py -e node_modules,.git -m copy
+```
+
+---
+
+### Collision Policies
+
+```
+python organizer.py -oc skip
+python organizer.py -oc rename
+python organizer.py -oc overwrite
 ```
 
 ---
 
 ## ⚙️ Flags Reference
 
-| Flag              | Description                     |
-| ----------------- | ------------------------------- |
-| `-s, --src`       | Source directory                |
-| `-d, --des`       | Destination directory           |
-| `-m, --mode`      | Execution mode: `copy` / `move` |
-| `-r, --recursive` | Include subfolders              |
-| `-e, --exclude`   | Exclude files/folders           |
-| `-dr, --dry_run`  | Preview execution               |
+| Flag                  | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `-s, --src`           | Source directory                                       |
+| `-d, --des`           | Destination directory                                  |
+| `-m, --mode`          | Execution mode: `copy` / `move`                        |
+| `-oc, --on_collision` | Collision policy mode: `skip` / `rename` / `overwrite` |
+| `-r, --recursive`     | Include subfolders                                     |
+| `-e, --exclude`       | Exclude files/folders                                  |
+| `-dr, --dry_run`      | Preview execution                                      |
 
 ---
 
-## 🧩 Current Module
+## 🧩 Core Module
 
-### File Organizer Engine
+### File Organizer Execution Engine
 
-Core responsibilities:
+Responsibilities:
 
 * Directory scanning
+* Permission validation
 * File classification
 * Taxonomy mapping
+* Collision resolution
 * Folder generation
 * Safe execution handling
 
-Designed as the foundation for future automation modules.
+Acts as the foundational automation layer.
 
 ---
 
-## 🧭 Vision
+## 🧭 Architecture Vision
 
-Smart File Organizer is evolving into a broader **CLI Personal Toolbox** — a suite of lightweight terminal utilities focused on filesystem automation.
+Smart File Organizer is evolving into a broader **CLI Personal Toolbox** : a suite of terminal utilities focused on filesystem automation.
 
-Planned expansion areas:
+Planned systems:
 
-* Execution logging & audit trails
-* Conflict / duplicate handling
-* Undo manifests
+* Structured execution logging
+* Undo / rollback engine
+* Duplicate detection
 * Large file sorters
 * Temp & cache cleaners
 * Configurable taxonomies
-* Plugin-style modules
+* Plugin modules
 
 ---
 
@@ -213,8 +259,13 @@ Planned expansion areas:
 
 **Work in Progress 🚧**
 
-Engine: Functional
-CLI Layer: Expanding
-Safety Systems: In Development
+| Layer                 | Status      |
+| --------------------- | ----------- |
+| Classification Engine | Stable      |
+| Execution Engine      | Stable      |
+| Collision System      | Implemented |
+| Permission Layer      | Implemented |
+| Logging System        | Planned     |
+| Undo Engine           | Planned     |
 
 Actively iterating toward a stable **v1.0 CLI automation toolkit**.
