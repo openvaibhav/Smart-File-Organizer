@@ -75,6 +75,23 @@ elif not dest_ok:
     print(f"Please check the permissions of destination dir (To move you need write and exec permissions.)")
     sys.exit(1)    
     
+# Logs
+def logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name):
+    log_entry = {
+        "original_file": str(org_file_name),
+        "file_created_at": str(created_at),
+        "executed_at": str(c_time),
+        "logged_at": datetime.datetime.now().isoformat(),
+        "src_path": str(src_path_log),
+        "dest_path": str(dest_path_log),
+        "action": mode,
+        "on_collision": handler,
+        "renamed_to": name
+    }
+    
+    with open("log.jsonl", "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
 # Files Iteration
 def collect_files(mode, P ,exclude_list):
     forbidden = set(exclude_list)
@@ -133,6 +150,9 @@ def copy_move_files(des, mode, files, on_collision):
     strng = "Copied" if mode == "copy" else "Moved"
     for x in files:
         file = x['file']
+        created_at = x['cr_time']
+        org_file_name = file.name
+        src_path_log = Path.resolve(file)
         loc = f"__{x['cat']}" if x['cat'] else ""
         try:
             src_path = str(file)
@@ -140,6 +160,8 @@ def copy_move_files(des, mode, files, on_collision):
             if dest_dir not in subc:
                 subc.add(dest_dir)
             dest_path = os.path.join(dest_dir, file.name)
+            t_dest = Path(dest_path)
+            dest_path_log = Path.resolve(t_dest)
             try:
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
             except Exception as e:
@@ -148,47 +170,78 @@ def copy_move_files(des, mode, files, on_collision):
                 if os.path.exists(dest_path):
                     handler = coll_handling(file, dest_dir, on_collision)
                     if handler == "skip":
+                        c_time = datetime.datetime.now()
+                        name = None
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                         continue
                     elif handler == "overwrite":
+                        c_time = datetime.datetime.now()
+                        name = None
                         os.remove(dest_path)
                         shutil.copy(src_path, dest_path)
                         t += 1
                         if loc not in c:
                             c.add(loc)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                     else:
+                        c_time = datetime.datetime.now()
+                        name = Path(handler).name
+                        dest_path_log = Path.resolve(handler)
                         shutil.copy(src_path, handler)
                         print(f"File copied to {handler} successfully")
                         t += 1
                         if loc not in c:
                             c.add(loc)
+                        handler = "rename"
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                 else:
+                    c_time = datetime.datetime.now()
+                    handler = None
+                    name = None
                     shutil.copy(src_path, dest_path)
                     t += 1
                     if loc not in c:
                         c.add(loc)
+                    logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                     
             else:
                 if os.path.exists(dest_path):
                     handler = coll_handling(file, dest_dir, on_collision)
                     if handler == "skip":
+                        c_time = datetime.datetime.now()
+                        name = None
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                         continue
                     elif handler == "overwrite":
+                        c_time = datetime.datetime.now()
+                        name = None
                         os.remove(dest_path)
                         shutil.move(src_path, dest_path)
                         t += 1
                         if loc not in c:
                             c.add(loc)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                     else:
+                        c_time = datetime.datetime.now()
+                        name = Path(handler).name
+                        dest_path_log = Path.resolve(handler)
                         shutil.move(src_path, handler)
                         print(f"File moved to {handler} successfully")
                         t += 1
                         if loc not in c:
                             c.add(loc)
+                        handler = "rename"
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                 else:
+                    c_time = datetime.datetime.now()
+                    handler = None
+                    name = None
                     shutil.move(src_path, dest_path)
                     t += 1
                     if loc not in c:
                         c.add(loc)
+                    logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        
         except Exception as e:
             raise(e)
     cc = len(c)
