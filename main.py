@@ -6,12 +6,15 @@ import datetime
 import argparse
 import sys
 import json
+import string
+import random
 
 # Argparse setup
 parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
 parser.add_argument('-s','--src',metavar='src',type=str,help='Input Source of where you want the automation to be done')
 parser.add_argument('-d','--des',metavar='des',type=str,help='Input Destination of where you want the final output')
 parser.add_argument('-m','--mode',metavar='mode',type=str,help='Mode of Script - Copy | Move')
+parser.add_argument('-oc','--on_collision',metavar='collision',type=str,help='Mode of Collision (What you want to do if the file/files exists at the destination) - (Default) Skip | Rename | Overwrite')
 parser.add_argument('-r', '--recursive', action='store_true',help='This will sort all files and even files inside subfolders')
 parser.add_argument('-e', '--exclude', metavar='exclude',help='This will exclude files and folders (Separate inputs with commas)')
 parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview (No Execution)')
@@ -50,6 +53,20 @@ if args.exclude:
 else:
     exclude_list = set_cat
     
+if args.on_collision:
+    if str(args.on_collision).lower() == "overwrite":
+        on_collision = "overwrite"
+    elif str(args.on_collision).lower() == "rename":
+        on_collision = "rename"
+    elif str(args.on_collision).lower() == "skip":
+        on_collision = "skip"
+    else:
+        print("Collision arguement not correct, if needed default (skip) action will be done")
+        on_collision = "skip"
+else:
+    print("Collision arguement not provided, if needed default (skip) action will be done")
+    on_collision = "skip"
+    
 # Permission Checks
 dest_ok = os.access(des, os.W_OK | os.X_OK)
 if dest_ok:
@@ -67,17 +84,18 @@ def collect_files(mode, P ,exclude_list):
         
         if x.is_file():
             stat = x.stat()
-            if args.dry_run:
-                src_ok = os.access(x, os.R_OK)
-            elif mode == "copy":
+            
+            if args.dry_run or mode == "copy":
                 src_ok = os.access(x, os.R_OK)
             elif mode == "move":
-                src_ok = os.access(x,os.W_OK | os.X_OK)
-            if src_ok:
-                pass
-            elif not src_ok:
-                print(f"Please check the permissions of {x}")
-                sys.exit(1)
+                src_ok = os.access(x, os.W_OK | os.X_OK)
+            else:
+                src_ok = True
+                
+            if not src_ok:
+                print(f"Please check the permissions of {x}. For now its being removed from the sorting system.")
+                continue
+            
             a = dict(
                 file=x,
                 size=stat.st_size,
@@ -87,17 +105,30 @@ def collect_files(mode, P ,exclude_list):
                 sub_cat=""
             )
             files.append(a)
+            
+# Collision Handling
+def coll_handling(file, dest, file_h):
+    ext = file.suffix
+    if file_h == "overwrite":
+        return "overwrite"
+    elif file_h == "rename":
+        chars = string.ascii_lowercase + string.digits
+        random_str = file.stem + "__collision_" + ''.join(random.choices(chars, k=10)) + ext
+        destn = os.path.join(dest, random_str)
+        
+        return destn
+    else:
+        return "skip"
+    
     
 # Copy or Move Files Function
-def copy_move_files(des, mode, files):
+def copy_move_files(des, mode, files, on_collision):
     t = 0
     c = set()
     subc = set()
     for x in files:
         file = x['file']
         loc = f"__{x['cat']}" if x['cat'] else ""
-        if loc not in c:
-            c.add(loc)
         try:
             src_path = str(file)
             dest_dir = os.path.join(des, loc, x.get('sub_cat', ''))
@@ -109,12 +140,54 @@ def copy_move_files(des, mode, files):
             except Exception as e:
                 print(f"Error Creating Folder : {e}")
             if mode == "copy":
-                shutil.copy(src_path, dest_path)
-                strng = "Copied"
+                if os.path.exists(dest_path):
+                    handler = coll_handling(file, dest_dir, on_collision)
+                    if handler == "skip":
+                        continue
+                    elif handler == "overwrite":
+                        shutil.copy(src_path, dest_path)
+                        strng = "Copied"
+                        t += 1
+                        if loc not in c:
+                            c.add(loc)
+                    else:
+                        shutil.copy(src_path, handler)
+                        print(f"File copied to {handler} successfully")
+                        strng = "Copied"
+                        t += 1
+                        if loc not in c:
+                            c.add(loc)
+                else:
+                    shutil.copy(src_path, dest_path)
+                    strng = "Copied"
+                    t += 1
+                    if loc not in c:
+                        c.add(loc)
+                    
             else:
-                shutil.move(src_path, dest_path)
-                strng = "Moved"
-            t += 1
+                if os.path.exists(dest_path):
+                    handler = coll_handling(file, dest_dir, on_collision)
+                    if handler == "skip":
+                        continue
+                    elif handler == "overwrite":
+                        shutil.move(src_path, dest_path)
+                        strng = "Moved"
+                        t += 1
+                        if loc not in c:
+                            c.add(loc)
+                    else:
+                        shutil.move(src_path, handler)
+                        print(f"File moved to {handler} successfully")
+                        strng = "Moved"
+                        t += 1
+                        if loc not in c:
+                            c.add(loc)
+                else:
+                    shutil.move(src_path, dest_path)
+                    strng = "Moved"
+                    t += 1
+                    if loc not in c:
+                        c.add(loc)
         except Exception as e:
             raise(e)
     cc = len(c)
@@ -193,9 +266,9 @@ if len(sys.argv) == 1:
     sys.exit(1)
 else:
     if args.dry_run:
-        dry_run_preview(p , d, files)
+        dry_run_preview(p, d, files)
     else:
         if mode == "copy" or mode == "move":
-            copy_move_files(p, d, mode, files)
+            copy_move_files(d, mode, files, on_collision)
         else:
             print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
