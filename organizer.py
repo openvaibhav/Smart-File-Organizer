@@ -11,12 +11,13 @@ import random
 
 # Argparse setup
 parser = argparse.ArgumentParser(description="Automate everyday file management tasks")
-parser.add_argument('-s','--src',metavar='src',type=str,help='Input Source of where you want the automation to be done')
-parser.add_argument('-d','--des',metavar='des',type=str,help='Input Destination of where you want the final output')
-parser.add_argument('-m','--mode',metavar='mode',type=str,help='Mode of Script - Copy | Move')
-parser.add_argument('-oc','--on_collision',metavar='collision',type=str,help='Mode of Collision (What you want to do if the file/files exists at the destination) - (Default) Skip | Rename | Overwrite')
+parser.add_argument('-s','--src',metavar='Source',type=str,help='Input Source of where you want the automation to be done')
+parser.add_argument('-d','--des',metavar='Destination',type=str,help='Input Destination of where you want the final output')
+parser.add_argument('-m','--mode',metavar='Copy | Move',type=str,help='Mode of Script')
+parser.add_argument('-oc','--on_collision',metavar='(Default) Skip | Rename | Overwrite',type=str,help='Mode of Collision (What you want to do if the file/files exists at the destination)')
 parser.add_argument('-r', '--recursive', action='store_true',help='This will sort all files and even files inside subfolders')
-parser.add_argument('-e', '--exclude', metavar='exclude',help='This will exclude files and folders (Separate inputs with commas)')
+parser.add_argument('-e', '--exclude', metavar='Files/Folders',help='This will exclude files and folders (Separate inputs with commas)')
+parser.add_argument('-l', '--logs',nargs='?',const=True,default=None,type=str,metavar='Time',help='-l show all the logs logged with dates | -l [time] shows the specific log of that time')
 parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview (No Execution)')
 
 args = parser.parse_args()
@@ -35,6 +36,7 @@ files = []
 src = args.src if args.src else "."
 des = args.des if args.des else "."
 mode = args.mode.lower() if args.mode else None
+RUN_ID = datetime.datetime.now().isoformat()
 
 doc_ext_map = data["doc_ext_map"]
 img_ext_map = data["img_ext_map"]
@@ -53,19 +55,67 @@ if args.exclude:
 else:
     exclude_list = set_cat
     
-if args.on_collision:
-    if str(args.on_collision).lower() == "overwrite":
-        on_collision = "overwrite"
-    elif str(args.on_collision).lower() == "rename":
-        on_collision = "rename"
-    elif str(args.on_collision).lower() == "skip":
-        on_collision = "skip"
-    else:
-        print("Collision arguement not correct, if needed default (skip) action will be done")
-        on_collision = "skip"
-elif not args.on_collision:
-    print("Collision arguement not provided, if needed default (skip) action will be done")
-    on_collision = "skip"
+# On Collision
+def on_collision():
+    if args.on_collision:
+        if str(args.on_collision).lower() == "overwrite":
+            return "overwrite"
+        elif str(args.on_collision).lower() == "rename":
+            return "rename"
+        elif str(args.on_collision).lower() == "skip":
+            return "skip"
+        else:
+            print("Collision arguement not correct, if needed default (skip) action will be done")
+            return "skip"
+    elif not args.on_collision and not args.logs:
+        print("Collision arguement not provided, if needed default (skip) action will be done")
+        return "skip"
+
+# Main log Menu    
+def show_log_menu():
+    try:
+        data = []
+        ids = []
+        files = []
+        action = []
+        sk = []
+        tmp = ""
+        file = 0
+        skip_c = 0
+        with open('log.jsonl', 'r') as f:
+            for line in f:
+                data.append(json.loads(line))
+        if not data:
+            print("No logs")
+            sys.exit(1)
+        data.sort(key=lambda x: x["id"])
+
+        for item in data:
+            is_skip = str(item.get('on_collision')) == "skip"
+            run_id = item.get('id')
+            act = item.get('action')
+            if str(run_id) != tmp:
+                ids.append(run_id)
+                if tmp != "":
+                    files.append(file)
+                    sk.append(skip_c)
+                action.append(act)
+                tmp = str(run_id)
+                skip_c = 1 if is_skip else 0
+                file = 0 if is_skip else 1
+            else:
+                if is_skip:
+                    skip_c += 1
+                elif not is_skip:
+                    file += 1
+                    
+        files.append(file)
+        sk.append(skip_c)
+        return ids, files, action, sk
+    except Exception as e:
+        print(e)
+
+
     
 # Permission Checks
 dest_ok = os.access(des, os.W_OK | os.X_OK)
@@ -78,6 +128,7 @@ elif not dest_ok:
 # Logs
 def logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name):
     log_entry = {
+        "id": RUN_ID,
         "original_file": str(org_file_name),
         "file_created_at": str(created_at),
         "executed_at": str(c_time),
@@ -139,7 +190,6 @@ def coll_handling(file, dest, file_h):
         return destn
     else:
         return "skip"
-    
     
 # Copy or Move Files Function
 def copy_move_files(des, mode, files, on_collision):
@@ -329,9 +379,22 @@ if len(sys.argv) == 1:
     sys.exit(1)
 else:
     if args.dry_run:
-        dry_run_preview(on_collision, d, files)
-    else:
+        on_coll = on_collision()
+        dry_run_preview(on_coll, d, files)
+    elif args.logs is True:
+        a = 0
+        log_id_list, files_count, act, s = show_log_menu()
+        print("Available Runs")
+        for id in log_id_list:
+            ac = "Copied" if str(act[a]) == "copy" else "Moved"
+            print(f"{a}. {id} - {files_count[a]} {ac} , {s[a]} Skipped")
+            a +=1
+    elif args.logs:
+        print("log with date")
+    elif args.logs is None:
         if mode == "copy" or mode == "move":
-            copy_move_files(d, mode, files, on_collision)
+            on_coll = on_collision()
+            copy_move_files(d, mode, files, on_coll)
         else:
             print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
+            sys.exit(1)
