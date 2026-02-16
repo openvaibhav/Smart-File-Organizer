@@ -36,7 +36,7 @@ files = []
 src = args.src if args.src else "."
 des = args.des if args.des else "."
 mode = args.mode.lower() if args.mode else None
-RUN_ID = datetime.datetime.now().isoformat()
+RUN_ID = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 doc_ext_map = data["doc_ext_map"]
 img_ext_map = data["img_ext_map"]
@@ -89,7 +89,6 @@ def show_log_menu():
             print("No logs")
             sys.exit(1)
         data.sort(key=lambda x: x["id"])
-
         for item in data:
             is_skip = str(item.get('on_collision')) == "skip"
             run_id = item.get('id')
@@ -108,7 +107,6 @@ def show_log_menu():
                     skip_c += 1
                 elif not is_skip:
                     file += 1
-                    
         files.append(file)
         sk.append(skip_c)
         return ids, files, action, sk
@@ -384,7 +382,7 @@ else:
     elif args.logs is True:
         a = 0
         log_id_list, files_count, act, s = show_log_menu()
-        print("Available Runs")
+        print("________________Available Runs________________")
         for id in log_id_list:
             ac = "Copied" if str(act[a]) == "copy" else "Moved"
             print(f"{a}. {id} - {files_count[a]} {ac} , {s[a]} Skipped")
