@@ -2,7 +2,7 @@
 
 A command-line utility designed to automate everyday file management tasks directly from the terminal.
 
-Smart File Organizer focuses on practical filesystem automation : organizing, categorizing, and restructuring files without relying on graphical interfaces.
+Smart File Organizer focuses on practical filesystem automation: organizing, categorizing, and restructuring files without relying on graphical interfaces.
 
 Built for developers, power users, and terminal-first workflows.
 
@@ -87,6 +87,8 @@ report.pdf
 → report__collision_x82kf91.pdf
 ```
 
+Collision outcomes are logged for auditability.
+
 ---
 
 ### 🔍 Dry-Run Preview Mode
@@ -135,11 +137,7 @@ Each processed file records:
 * Creation timestamp
 * Modification timestamp
 
-This metadata layer prepares the engine for:
-
-* Execution logging
-* Audit manifests
-* Undo systems
+This metadata layer powers logging, audit trails, and future rollback systems.
 
 ---
 
@@ -152,6 +150,84 @@ Validates required permissions before execution:
 * Destination write validation
 
 Files lacking permissions are skipped safely.
+
+---
+
+## 📜 Structured Execution Logging
+
+Smart File Organizer maintains an append-only execution log (`log.jsonl`) capturing every processed file.
+
+Each log entry records:
+
+* Run ID (batch identifier)
+* Original filename
+* File creation timestamp
+* Execution timestamp
+* Source path
+* Destination path
+* Action performed (copy / move)
+* Collision outcome
+* Rename mapping (if applicable)
+
+Example entry:
+
+```json
+{
+  "id": "2026-02-16T14:22:11.902341",
+  "original_file": "report.pdf",
+  "src_path": "/Downloads/report.pdf",
+  "dest_path": "/Organized/__Documents/report.pdf",
+  "action": "copy",
+  "on_collision": "rename",
+  "renamed_to": "report__collision_x82kf91.pdf"
+}
+```
+
+Logs are stored in **JSONL format** for streaming safety and incremental history tracking.
+
+---
+
+## 🧭 Run Grouping System
+
+Every execution is assigned a unique **Run ID**.
+
+This enables:
+
+* Batch identification
+* Execution lineage tracking
+* Collision analytics
+* Audit grouping
+
+All files processed in a single command share the same Run ID.
+
+---
+
+## 📊 Log Inspection CLI
+
+View execution history directly from the terminal.
+
+### Show All Runs
+
+```
+python organizer.py -l
+```
+
+Displays:
+
+* Run ID
+* Files processed
+* Files skipped
+* Action type
+
+---
+
+### Inspect Specific Run
+
+```
+python organizer.py -l <run_id>
+```
+
+Shows detailed logs for a single execution batch.
 
 ---
 
@@ -207,17 +283,26 @@ python organizer.py -oc overwrite
 
 ---
 
+### View Logs
+
+```
+python organizer.py -l
+```
+
+---
+
 ## ⚙️ Flags Reference
 
-| Flag                  | Description                                            |
-| --------------------- | ------------------------------------------------------ |
-| `-s, --src`           | Source directory                                       |
-| `-d, --des`           | Destination directory                                  |
-| `-m, --mode`          | Execution mode: `copy` / `move`                        |
-| `-oc, --on_collision` | Collision policy mode: `skip` / `rename` / `overwrite` |
-| `-r, --recursive`     | Include subfolders                                     |
-| `-e, --exclude`       | Exclude files/folders                                  |
-| `-dr, --dry_run`      | Preview execution                                      |
+| Flag                  | Description                                       |
+| --------------------- | ------------------------------------------------- |
+| `-s, --src`           | Source directory                                  |
+| `-d, --des`           | Destination directory                             |
+| `-m, --mode`          | Execution mode: `copy` / `move`                   |
+| `-oc, --on_collision` | Collision policy: `skip` / `rename` / `overwrite` |
+| `-r, --recursive`     | Include subfolders                                |
+| `-e, --exclude`       | Exclude files/folders                             |
+| `-l, --logs`          | View execution history                            |
+| `-dr, --dry_run`      | Preview execution                                 |
 
 ---
 
@@ -233,7 +318,8 @@ Responsibilities:
 * Taxonomy mapping
 * Collision resolution
 * Folder generation
-* Safe execution handling
+* Metadata extraction
+* Structured logging
 
 Acts as the foundational automation layer.
 
@@ -241,11 +327,10 @@ Acts as the foundational automation layer.
 
 ## 🧭 Architecture Vision
 
-Smart File Organizer is evolving into a broader **CLI Personal Toolbox** : a suite of terminal utilities focused on filesystem automation.
+Smart File Organizer is evolving into a broader **CLI Personal Toolbox** a suite of terminal utilities focused on filesystem automation.
 
-Planned systems:
+Planned expansion systems:
 
-* Structured execution logging
 * Undo / rollback engine
 * Duplicate detection
 * Large file sorters
@@ -265,7 +350,8 @@ Planned systems:
 | Execution Engine      | Stable      |
 | Collision System      | Implemented |
 | Permission Layer      | Implemented |
-| Logging System        | Planned     |
+| Logging System        | Implemented |
+| Run Grouping          | Implemented |
 | Undo Engine           | Planned     |
 
 Actively iterating toward a stable **v1.0 CLI automation toolkit**.
