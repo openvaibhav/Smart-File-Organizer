@@ -17,7 +17,7 @@ parser.add_argument('-m','--mode',metavar='Copy | Move',type=str,help='Mode of S
 parser.add_argument('-oc','--on_collision',metavar='(Default) Skip | Rename | Overwrite',type=str,help='Mode of Collision (What you want to do if the file/files exists at the destination)')
 parser.add_argument('-r', '--recursive', action='store_true',help='This will sort all files and even files inside subfolders')
 parser.add_argument('-e', '--exclude', metavar='Files/Folders',help='This will exclude files and folders (Separate inputs with commas)')
-parser.add_argument('-l', '--logs',nargs='?',const=True,default=None,type=str,metavar='Time',help='-l show all the logs logged with dates | -l [time] shows the specific log of that time')
+parser.add_argument('-l', '--logs',nargs='?',const=True,default=None,type=int,metavar='Time',help='-l show all the logs logged with dates and data | -l [sr. no.(int)] shows the specific log of that sr. no.')
 parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview (No Execution)')
 
 args = parser.parse_args()
@@ -36,6 +36,7 @@ files = []
 src = args.src if args.src else "."
 des = args.des if args.des else "."
 mode = args.mode.lower() if args.mode else None
+log_sr = args.logs
 RUN_ID = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 doc_ext_map = data["doc_ext_map"]
@@ -71,10 +72,20 @@ def on_collision():
         print("Collision arguement not provided, if needed default (skip) action will be done")
         return "skip"
 
+# Load Logs
+def load_logs():
+    data = []
+    with open('log.jsonl', 'r') as f:
+            for line in f:
+                data.append(json.loads(line))
+    data.sort(key=lambda x: x["id"])
+    
+    return data
+
 # Main log Menu    
 def show_log_menu():
     try:
-        data = []
+        data = load_logs()
         ids = []
         files = []
         action = []
@@ -82,13 +93,9 @@ def show_log_menu():
         tmp = ""
         file = 0
         skip_c = 0
-        with open('log.jsonl', 'r') as f:
-            for line in f:
-                data.append(json.loads(line))
         if not data:
             print("No logs")
             sys.exit(1)
-        data.sort(key=lambda x: x["id"])
         for item in data:
             is_skip = str(item.get('on_collision')) == "skip"
             run_id = item.get('id')
@@ -112,8 +119,57 @@ def show_log_menu():
         return ids, files, action, sk
     except Exception as e:
         print(e)
+        
+# Log with ID
+def field(label, value):
+    v = value if value else "-"
+    return f"{label:<14}: {v}"
 
+def trunc_path(p, max_len=60):
+    p = str(p)
+    if len(p) <= max_len:
+        return p
+    return "..." + p[-55:]
 
+def log_sr_check(sr_no, run_ids, fcnt, mode, skpcnt):
+    try:
+        data = load_logs()
+        if not data:
+            print("No logs")
+            sys.exit(1)
+        print("_"*40)
+        print(field("Run ID", run_ids[sr_no]))
+        print(field("Mode", mode))
+        print(field("Files", fcnt))
+        print(field("Skipped", skpcnt))
+        print("_"*40)
+        a = 1
+        for item in data:
+            if run_ids[sr_no] == item.get('id'):
+                run_id = item.get('id')
+                org_file = item.get('original_file')
+                fca = item.get('file_created_at')
+                ea = item.get('executed_at')
+                la =item.get('logged_at')
+                src = item.get('src_path')
+                des = item.get('dest_path')
+                action = item.get('action').capitalize()
+                on_coll = item.get('on_collision')
+                renamed_to = item.get('renamed_to')
+                print("_"*40)
+                print(a,".",org_file)
+                print(field("Created", fca))
+                print(field("Executed", ea))
+                print(field("Logged", la))
+                print(field("Source", trunc_path(src)))
+                print(field("Destination", trunc_path(des)))
+                print(field("Action", action))
+                print(field("On Collision", on_coll))
+                print(field("Renamed to", renamed_to))
+                print("_"*40)
+                a += 1
+    except Exception as e:
+        print(e)
     
 # Permission Checks
 dest_ok = os.access(des, os.W_OK | os.X_OK)
@@ -130,7 +186,7 @@ def logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler
         "original_file": str(org_file_name),
         "file_created_at": str(created_at),
         "executed_at": str(c_time),
-        "logged_at": datetime.datetime.now().isoformat(),
+        "logged_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "src_path": str(src_path_log),
         "dest_path": str(dest_path_log),
         "action": mode,
@@ -165,8 +221,8 @@ def collect_files(mode, P ,exclude_list):
             a = dict(
                 file=x,
                 size=stat.st_size,
-                cr_time=datetime.datetime.fromtimestamp(stat.st_ctime),
-                mod_time=datetime.datetime.fromtimestamp(stat.st_mtime),
+                cr_time=datetime.datetime.fromtimestamp(stat.st_ctime).strftime("%Y-%m-%d %H:%M:%S"),
+                mod_time=datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                 cat="",
                 sub_cat=""
             )
@@ -218,12 +274,12 @@ def copy_move_files(des, mode, files, on_collision):
                 if os.path.exists(dest_path):
                     handler = coll_handling(file, dest_dir, on_collision)
                     if handler == "skip":
-                        c_time = datetime.datetime.now()
+                        c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = None
                         logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                         continue
                     elif handler == "overwrite":
-                        c_time = datetime.datetime.now()
+                        c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = None
                         os.remove(dest_path)
                         shutil.copy(src_path, dest_path)
@@ -232,7 +288,7 @@ def copy_move_files(des, mode, files, on_collision):
                             c.add(loc)
                         logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                     else:
-                        c_time = datetime.datetime.now()
+                        c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = Path(handler).name
                         dest_path_log = Path.resolve(handler)
                         shutil.copy(src_path, handler)
@@ -243,7 +299,7 @@ def copy_move_files(des, mode, files, on_collision):
                         handler = "rename"
                         logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                 else:
-                    c_time = datetime.datetime.now()
+                    c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     handler = None
                     name = None
                     shutil.copy(src_path, dest_path)
@@ -256,12 +312,12 @@ def copy_move_files(des, mode, files, on_collision):
                 if os.path.exists(dest_path):
                     handler = coll_handling(file, dest_dir, on_collision)
                     if handler == "skip":
-                        c_time = datetime.datetime.now()
+                        c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = None
                         logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                         continue
                     elif handler == "overwrite":
-                        c_time = datetime.datetime.now()
+                        c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = None
                         os.remove(dest_path)
                         shutil.move(src_path, dest_path)
@@ -270,7 +326,7 @@ def copy_move_files(des, mode, files, on_collision):
                             c.add(loc)
                         logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                     else:
-                        c_time = datetime.datetime.now()
+                        c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = Path(handler).name
                         dest_path_log = Path.resolve(handler)
                         shutil.move(src_path, handler)
@@ -281,7 +337,7 @@ def copy_move_files(des, mode, files, on_collision):
                         handler = "rename"
                         logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
                 else:
-                    c_time = datetime.datetime.now()
+                    c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     handler = None
                     name = None
                     shutil.move(src_path, dest_path)
@@ -382,13 +438,24 @@ else:
     elif args.logs is True:
         a = 0
         log_id_list, files_count, act, s = show_log_menu()
-        print("________________Available Runs________________")
+        print("_"*40)
+        print("Available Runs")
+        print("_"*40)
+
         for id in log_id_list:
             ac = "Copied" if str(act[a]) == "copy" else "Moved"
             print(f"{a}. {id} - {files_count[a]} {ac} , {s[a]} Skipped")
             a +=1
-    elif args.logs:
-        print("log with date")
+    elif args.logs is not None:
+        if isinstance(log_sr, int):
+            log_id_list, files_count, act, s = show_log_menu()
+            if log_sr > len(act)-1:
+                print("Please check the log list again by -l")
+            else:
+                ac = "Copied" if str(act[log_sr]) == "copy" else "Moved"
+                log_sr_check(log_sr,log_id_list,files_count[log_sr],ac,s[log_sr])
+        else:
+            print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
     elif args.logs is None:
         if mode == "copy" or mode == "move":
             on_coll = on_collision()
