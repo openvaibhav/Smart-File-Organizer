@@ -2,7 +2,7 @@
 
 A command-line utility designed to automate everyday file management tasks directly from the terminal.
 
-Smart File Organizer focuses on practical filesystem automation: organizing, categorizing, and restructuring files without relying on graphical interfaces.
+Smart File Organizer focuses on practical filesystem automation: organizing, classifying, and restructuring files without relying on graphical interfaces.
 
 Built for developers, power users, and terminal-first workflows.
 
@@ -23,7 +23,7 @@ Sorts files into structured categories based on extensions.
 * Archives
 * Uncategorized
 
-Classification is driven via an external JSON taxonomy system.
+Classification is driven via an external **JSON taxonomy system**, allowing extensibility without modifying core code.
 
 ---
 
@@ -66,7 +66,7 @@ Choose how files are handled:
 * **Copy Mode** → Leaves originals untouched
 * **Move Mode** → Fully reorganizes source
 
-Execution is performed with permission validation and collision handling.
+Execution includes permission validation and collision handling safeguards.
 
 ---
 
@@ -80,7 +80,7 @@ Supported policies:
 * **Rename** → Generates unique collision filename
 * **Overwrite** → Replaces existing file
 
-Example:
+**Example**
 
 ```
 report.pdf
@@ -145,8 +145,8 @@ This metadata layer powers logging, audit trails, and future rollback systems.
 
 Validates required permissions before execution:
 
-* Read → Copy / Dry-Run
-* Write + Execute → Move
+* **Read** → Copy / Dry-Run
+* **Write + Execute** → Move
 * Destination write validation
 
 Files lacking permissions are skipped safely.
@@ -155,26 +155,36 @@ Files lacking permissions are skipped safely.
 
 ## 📜 Structured Execution Logging
 
-Smart File Organizer maintains an append-only execution log (`log.jsonl`) capturing every processed file.
+Smart File Organizer maintains an append-only execution log:
 
-Each log entry records:
+```
+log.jsonl
+```
+
+Each processed file is written as a structured JSONL entry.
+
+### Logged Fields
 
 * Run ID (batch identifier)
 * Original filename
 * File creation timestamp
 * Execution timestamp
+* Log timestamp
 * Source path
 * Destination path
 * Action performed (copy / move)
 * Collision outcome
 * Rename mapping (if applicable)
 
-Example entry:
+### Example Entry
 
 ```json
 {
-  "id": "2026-02-16T14:22:11.902341",
+  "id": "2026-02-17 09:15:02",
   "original_file": "report.pdf",
+  "file_created_at": "2026-02-16 16:18:34",
+  "executed_at": "2026-02-17 09:15:02",
+  "logged_at": "2026-02-17 09:15:02",
   "src_path": "/Downloads/report.pdf",
   "dest_path": "/Organized/__Documents/report.pdf",
   "action": "copy",
@@ -204,7 +214,9 @@ All files processed in a single command share the same Run ID.
 
 ## 📊 Log Inspection CLI
 
-View execution history directly from the terminal.
+Execution history can be inspected directly from the terminal.
+
+---
 
 ### Show All Runs
 
@@ -214,6 +226,7 @@ python organizer.py -l
 
 Displays:
 
+* Run index (serial number)
 * Run ID
 * Files processed
 * Files skipped
@@ -224,10 +237,15 @@ Displays:
 ### Inspect Specific Run
 
 ```
-python organizer.py -l <run_id>
+python organizer.py -l <serial_number>
 ```
 
-Shows detailed logs for a single execution batch.
+Shows detailed logs for a specific execution batch, including:
+
+* Source & destination paths
+* Execution timestamps
+* Collision handling results
+* Rename mappings
 
 ---
 
@@ -287,6 +305,7 @@ python organizer.py -oc overwrite
 
 ```
 python organizer.py -l
+python organizer.py -l 0
 ```
 
 ---
@@ -327,7 +346,7 @@ Acts as the foundational automation layer.
 
 ## 🧭 Architecture Vision
 
-Smart File Organizer is evolving into a broader **CLI Personal Toolbox** a suite of terminal utilities focused on filesystem automation.
+Smart File Organizer is evolving into a broader **CLI Personal Toolbox** — a suite of terminal utilities focused on filesystem automation.
 
 Planned expansion systems:
 
@@ -352,6 +371,7 @@ Planned expansion systems:
 | Permission Layer      | Implemented |
 | Logging System        | Implemented |
 | Run Grouping          | Implemented |
+| Log Viewer CLI        | Implemented |
 | Undo Engine           | Planned     |
 
 Actively iterating toward a stable **v1.0 CLI automation toolkit**.
