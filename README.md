@@ -137,7 +137,7 @@ Each processed file records:
 * Creation timestamp
 * Modification timestamp
 
-This metadata layer powers logging, audit trails, and future rollback systems.
+This metadata layer powers logging and audit trails.
 
 ---
 
@@ -216,8 +216,6 @@ All files processed in a single command share the same Run ID.
 
 Execution history can be inspected directly from the terminal.
 
----
-
 ### Show All Runs
 
 ```
@@ -240,12 +238,58 @@ Displays:
 python organizer.py -l <serial_number>
 ```
 
-Shows detailed logs for a specific execution batch, including:
+Shows detailed logs for a specific execution batch.
 
-* Source & destination paths
-* Execution timestamps
-* Collision handling results
-* Rename mappings
+---
+
+## ↩️ Undo System
+
+Smart File Organizer includes a **batch undo engine** powered by execution logs.
+
+Undo operates at the **run level**, reversing file operations from a specific execution instance.
+
+---
+
+### Undo Last Run
+
+```
+python organizer.py -u
+```
+
+Reverses the most recent execution batch.
+
+---
+
+### Undo Specific Run
+
+```
+python organizer.py -u <serial_number>
+```
+
+Targets a specific logged run.
+
+---
+
+### Undo Behavior
+
+| Original Action | Undo Result                        |
+| --------------- | ---------------------------------- |
+| Move            | File moved back to source          |
+| Copy            | Copied instance removed / archived |
+| Rename          | Original filename restored         |
+| Skip            | Ignored                            |
+| Overwrite       | Cannot restore overwritten data    |
+
+---
+
+### Undo Safety Notes
+
+* Skipped files are ignored
+* Existing conflicts are avoided
+* Overwritten originals cannot be recovered
+* Requires original paths to still exist
+
+Undo is a **best-effort rollback**, not snapshot recovery.
 
 ---
 
@@ -257,15 +301,11 @@ Shows detailed logs for a specific execution batch, including:
 python organizer.py -m copy
 ```
 
----
-
 ### Source + Destination
 
 ```
 python organizer.py -s ~/Downloads -d ~/Organized -m move
 ```
-
----
 
 ### Dry Run
 
@@ -273,23 +313,17 @@ python organizer.py -s ~/Downloads -d ~/Organized -m move
 python organizer.py -dr -m copy
 ```
 
----
-
 ### Recursive Sorting
 
 ```
 python organizer.py -r -m move
 ```
 
----
-
 ### Exclusions
 
 ```
 python organizer.py -e node_modules,.git -m copy
 ```
-
----
 
 ### Collision Policies
 
@@ -299,13 +333,14 @@ python organizer.py -oc rename
 python organizer.py -oc overwrite
 ```
 
----
-
-### View Logs
+### Logs & Undo
 
 ```
 python organizer.py -l
 python organizer.py -l 0
+
+python organizer.py -u
+python organizer.py -u 0
 ```
 
 ---
@@ -321,6 +356,7 @@ python organizer.py -l 0
 | `-r, --recursive`     | Include subfolders                                |
 | `-e, --exclude`       | Exclude files/folders                             |
 | `-l, --logs`          | View execution history                            |
+| `-u, --undo`          | Undo execution batch                              |
 | `-dr, --dry_run`      | Preview execution                                 |
 
 ---
@@ -339,29 +375,15 @@ Responsibilities:
 * Folder generation
 * Metadata extraction
 * Structured logging
+* Batch undo processing
 
 Acts as the foundational automation layer.
 
 ---
 
-## 🧭 Architecture Vision
-
-Smart File Organizer is evolving into a broader **CLI Personal Toolbox** — a suite of terminal utilities focused on filesystem automation.
-
-Planned expansion systems:
-
-* Undo / rollback engine
-* Duplicate detection
-* Large file sorters
-* Temp & cache cleaners
-* Configurable taxonomies
-* Plugin modules
-
----
-
 ## 📌 Status
 
-**Work in Progress 🚧**
+**Learning Project : Active Development 🚧**
 
 | Layer                 | Status      |
 | --------------------- | ----------- |
@@ -372,6 +394,6 @@ Planned expansion systems:
 | Logging System        | Implemented |
 | Run Grouping          | Implemented |
 | Log Viewer CLI        | Implemented |
-| Undo Engine           | Planned     |
+| Undo Engine           | Implemented |
 
-Actively iterating toward a stable **v1.0 CLI automation toolkit**.
+Built as a practical filesystem automation project for learning CLI systems, logging design, and rollback mechanics.
