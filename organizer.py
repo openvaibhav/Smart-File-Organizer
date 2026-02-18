@@ -18,6 +18,7 @@ parser.add_argument('-oc','--on_collision',metavar='(Default) Skip | Rename | Ov
 parser.add_argument('-r', '--recursive', action='store_true',help='This will sort all files and even files inside subfolders')
 parser.add_argument('-e', '--exclude', metavar='Files/Folders',help='This will exclude files and folders (Separate inputs with commas)')
 parser.add_argument('-l', '--logs',nargs='?',const=True,default=None,type=int,metavar='Time',help='-l show all the logs logged with dates and data | -l [sr. no.(int)] shows the specific log of that sr. no.')
+parser.add_argument('-u', '--undo',nargs='?',const=True,default=None,type=int,metavar='Undo',help='-u undo the last instance | -u [sr. no.(int)] undo the specific instance of that sr. no.')
 parser.add_argument('-dr', '--dry_run', action='store_true',help='Dry Run Preview (No Execution)')
 
 args = parser.parse_args()
@@ -73,19 +74,22 @@ def on_collision():
         return "skip"
 
 # Load Logs
-def load_logs():
+def load_logs(i):
     data = []
     with open('log.jsonl', 'r') as f:
             for line in f:
                 data.append(json.loads(line))
-    data.sort(key=lambda x: x["id"])
-    
+    if i == "l":    
+        data.sort(key=lambda x: x["id"])
+    else:
+        data.sort(key=lambda x: x["id"], reverse=True)
+        
     return data
 
 # Main log Menu    
 def show_log_menu():
     try:
-        data = load_logs()
+        data = load_logs("l")
         ids = []
         files = []
         action = []
@@ -133,7 +137,7 @@ def trunc_path(p, max_len=60):
 
 def log_sr_check(sr_no, run_ids, fcnt, mode, skpcnt):
     try:
-        data = load_logs()
+        data = load_logs("l")
         if not data:
             print("No logs")
             sys.exit(1)
@@ -382,6 +386,59 @@ def dry_run_preview(on_collision, des, files):
 
     for srcc, destt in prepped_paths:
         print(f"{srcc:<{max_src_len}} --> {destt}")
+        
+# Undo Last Instance
+def undo_last_instance(run_ids, files_count, act, s):
+    try:
+        data = load_logs("u")
+        id = run_ids.pop()
+        for item in data:
+            if id == item.get('id'):
+                org_file = item.get('original_file')
+                src_path = Path(item.get('dest_path'))
+                dest_path = Path(item.get('src_path'))
+                src_dir = src_path.parent
+                dest_dir = dest_path.parent
+                action = item.get('action')
+                handler = item.get('on_collision')
+                renamed_to = item.get('renamed_to')
+                try:
+                    os.path.exists(src_dir)
+                    os.path.exists(dest_dir)
+                except Exception as e:
+                    print(f"Cannot find location...\nError:{e}\nPlease check logs and check both locations exist...\nExiting...")
+                    sys.exit(1)
+                if action == "move":
+                    if os.path.exists(dest_path):
+                        pass
+                    else:
+                        if handler == "skip":
+                            continue
+                        elif handler == "overwrite":
+                            shutil.move(src_path, dest_path)
+                        elif handler == "rename":
+                            dest_path = dest_path.with_name(renamed_to)
+                            shutil.move(src_path, dest_path)
+                            dest_path.rename(org_file)
+                elif action == "copy":
+                    if handler == "skip":
+                        continue
+                    else:
+                        ext = src_path.suffix
+                        chars = string.ascii_lowercase + string.digits
+                        random_str = src_path.stem + "__undo_" + ''.join(random.choices(chars, k=10)) + ext
+                        dest_path = os.path.join(dest_dir, random_str)
+                        while os.path.exists(dest_path):
+                            random_str = src_path.stem + "__undo_" + ''.join(random.choices(chars, k=10)) + ext
+                            dest_path = os.path.join(dest_dir, random_str)
+                        shutil.move(src_path, dest_path)
+
+                
+        if not data:
+            print("No logs")
+            sys.exit(1)
+    except Exception as e:
+        print(e)
 
 # Variable locations setup
 if args.src:
@@ -435,31 +492,46 @@ else:
     if args.dry_run:
         on_coll = on_collision()
         dry_run_preview(on_coll, d, files)
-    elif args.logs is True:
-        a = 0
-        log_id_list, files_count, act, s = show_log_menu()
-        print("_"*40)
-        print("Available Runs")
-        print("_"*40)
-
-        for id in log_id_list:
-            ac = "Copied" if str(act[a]) == "copy" else "Moved"
-            print(f"{a}. {id} - {files_count[a]} {ac} , {s[a]} Skipped")
-            a +=1
-    elif args.logs is not None:
-        if isinstance(log_sr, int):
+    elif args.undo is True:
+        try:
+            input("\nUndo Feature will skip 'Skipped' logs and file if a file with same name (in case of move action) is present at the destination, also it wont be able to return any files which were overwritten. Its just an undo feature for the last instance. Press Enter to start organizing, or Ctrl+C to cancel...")
             log_id_list, files_count, act, s = show_log_menu()
-            if log_sr > len(act)-1:
-                print("Please check the log list again by -l")
-            else:
-                ac = "Copied" if str(act[log_sr]) == "copy" else "Moved"
-                log_sr_check(log_sr,log_id_list,files_count[log_sr],ac,s[log_sr])
-        else:
-            print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
-    elif args.logs is None:
-        if mode == "copy" or mode == "move":
-            on_coll = on_collision()
-            copy_move_files(d, mode, files, on_coll)
-        else:
-            print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
+            undo_last_instance(log_id_list, files_count, act, s)
+        except KeyboardInterrupt:
             sys.exit(1)
+    elif args.undo is not None:
+        try:
+            input("\nUndo Feature(For Later) will skip 'Skipped' logs and file if a file with same name (in case of move action) is present at the destination, also it wont be able to return any files which were overwritten. Its just an undo feature for the specific instance. Press Enter to start organizing, or Ctrl+C to cancel...")
+            pass 
+        except KeyboardInterrupt:
+            sys.exit(1)
+        # For Later 
+    elif args.undo is None:
+        if args.logs is True:
+            a = 0
+            log_id_list, files_count, act, s = show_log_menu()
+            print("_"*40)
+            print("Available Runs")
+            print("_"*40)
+
+            for id in log_id_list:
+                ac = "Copied" if str(act[a]) == "copy" else "Moved"
+                print(f"{a}. {id} - {files_count[a]} {ac} , {s[a]} Skipped")
+                a +=1
+        elif args.logs is not None:
+            if isinstance(log_sr, int):
+                log_id_list, files_count, act, s = show_log_menu()
+                if log_sr > len(act)-1:
+                    print("Please check the log list again by -l")
+                else:
+                    ac = "Copied" if str(act[log_sr]) == "copy" else "Moved"
+                    log_sr_check(log_sr,log_id_list,files_count[log_sr],ac,s[log_sr])
+            else:
+                print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
+        elif args.logs is None:
+            if mode == "copy" or mode == "move":
+                on_coll = on_collision()
+                copy_move_files(d, mode, files, on_coll)
+            else:
+                print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
+                sys.exit(1)
