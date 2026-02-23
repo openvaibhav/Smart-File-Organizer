@@ -211,17 +211,6 @@ def collect_files(mode, P ,exclude_list):
         if x.is_file():
             stat = x.stat()
             
-            if args.dry_run or mode == "copy":
-                src_ok = os.access(x, os.R_OK)
-            elif mode == "move":
-                src_ok = os.access(x, os.W_OK | os.X_OK)
-            else:
-                src_ok = True
-                
-            if not src_ok:
-                print(f"Please check the permissions of {x}. For now its being removed from the sorting system.")
-                continue
-            
             a = dict(
                 file=x,
                 size=stat.st_size,
@@ -453,12 +442,14 @@ elif not args.src:
 
 if args.des:
     if Path(des).exists():
-        if Path(des).resolve().is_relative_to(Path(src).resolve()):
-            print("Destination cannot be inside Source")
-            sys.exit(1)
         d = Path(des)
     else:
         print("Path does not exist")
+        sys.exit(1)
+
+if args.recursive:
+    if Path(des).resolve().is_relative_to(Path(src).resolve()):
+        print("Destination cannot be inside Source")
         sys.exit(1)
     
 elif not args.des:
