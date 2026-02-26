@@ -25,9 +25,23 @@ args = parser.parse_args()
 
 # Extensions load from json
 try:
-    with open("extensions.json", "r") as f:
+    ext_script_dir = Path(__file__).resolve().parent
+    ext_file = str(ext_script_dir) + "/extensions.json"
+    ext_file = Path(ext_file)
+    with open(ext_file, "r") as f:
         data = json.load(f)
 except FileNotFoundError:
+    print(ext_file)
+    print("Extensions json file not found")
+    sys.exit(1)
+    
+# Logs file location
+try:
+    log_dir = Path(__file__).resolve().parent
+    log_file = str(ext_script_dir) + "/log.jsonl"
+    log_file = Path(log_file)
+except FileNotFoundError:
+    print(log_file)
     print("Extensions json file not found")
     sys.exit(1)
     
@@ -74,9 +88,9 @@ def on_collision():
         return "skip"
 
 # Load Logs
-def load_logs(i):
+def load_logs(i,log_file):
     data = []
-    with open('log.jsonl', 'r') as f:
+    with open(log_file, 'r') as f:
             for line in f:
                 data.append(json.loads(line))
     if i == "l":    
@@ -87,9 +101,9 @@ def load_logs(i):
     return data
 
 # Main log Menu    
-def show_log_menu():
+def show_log_menu(log_file):
     try:
-        data = load_logs("l")
+        data = load_logs("l",log_file)
         ids = []
         files = []
         action = []
@@ -135,9 +149,9 @@ def trunc_path(p, max_len=60):
         return p
     return "..." + p[-55:]
 
-def log_sr_check(sr_no, run_ids, fcnt, mode, skpcnt):
+def log_sr_check(sr_no, run_ids, fcnt, mode, skpcnt, log_file):
     try:
-        data = load_logs("l")
+        data = load_logs("l", log_file)
         if not data:
             print("No logs")
             sys.exit(1)
@@ -184,7 +198,7 @@ elif not dest_ok:
     sys.exit(1)    
     
 # Logs
-def logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name):
+def logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file):
     log_entry = {
         "id": RUN_ID,
         "original_file": str(org_file_name),
@@ -198,7 +212,7 @@ def logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler
         "renamed_to": name
     }
     
-    with open("log.jsonl", "a") as f:
+    with open(log_file, "a") as f:
         f.write(json.dumps(log_entry) + "\n")
 
 # Files Iteration
@@ -239,7 +253,7 @@ def coll_handling(file, dest, file_h):
         return "skip"
     
 # Copy or Move Files Function
-def copy_move_files(des, mode, files, on_collision):
+def copy_move_files(des, mode, files, on_collision, log_file):
     t = 0
     c = set()
     subc = set()
@@ -269,7 +283,7 @@ def copy_move_files(des, mode, files, on_collision):
                     if handler == "skip":
                         c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = None
-                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                         continue
                     elif handler == "overwrite":
                         c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -279,7 +293,7 @@ def copy_move_files(des, mode, files, on_collision):
                         t += 1
                         if loc not in c:
                             c.add(loc)
-                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                     else:
                         c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = Path(handler).name
@@ -290,7 +304,7 @@ def copy_move_files(des, mode, files, on_collision):
                         if loc not in c:
                             c.add(loc)
                         handler = "rename"
-                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                 else:
                     c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     handler = None
@@ -299,7 +313,7 @@ def copy_move_files(des, mode, files, on_collision):
                     t += 1
                     if loc not in c:
                         c.add(loc)
-                    logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                    logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                     
             else:
                 if os.path.exists(dest_path):
@@ -307,7 +321,7 @@ def copy_move_files(des, mode, files, on_collision):
                     if handler == "skip":
                         c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = None
-                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                         continue
                     elif handler == "overwrite":
                         c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -317,7 +331,7 @@ def copy_move_files(des, mode, files, on_collision):
                         t += 1
                         if loc not in c:
                             c.add(loc)
-                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                     else:
                         c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         name = Path(handler).name
@@ -328,7 +342,7 @@ def copy_move_files(des, mode, files, on_collision):
                         if loc not in c:
                             c.add(loc)
                         handler = "rename"
-                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                        logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                 else:
                     c_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     handler = None
@@ -337,7 +351,7 @@ def copy_move_files(des, mode, files, on_collision):
                     t += 1
                     if loc not in c:
                         c.add(loc)
-                    logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name)
+                    logs(org_file_name,created_at,c_time,src_path_log,dest_path_log,mode,handler,name,log_file)
                         
         except Exception as e:
             raise(e)
@@ -377,9 +391,9 @@ def dry_run_preview(on_collision, des, files):
         print(f"{srcc:<{max_src_len}} --> {destt}")
         
 # Undo Last Instance
-def undo_last_instance(run_ids, files_count, act, s):
+def undo_last_instance(run_ids, files_count, act, s, log_file):
     try:
-        data = load_logs("u")
+        data = load_logs("u",log_file)
         id = run_ids.pop()
         for item in data:
             if id == item.get('id'):
@@ -486,8 +500,8 @@ else:
     elif args.undo is True:
         try:
             input("\nUndo Feature will skip 'Skipped' logs and file if a file with same name (in case of move action) is present at the destination, also it wont be able to return any files which were overwritten. Its just an undo feature for the last instance. Press Enter to start organizing, or Ctrl+C to cancel...")
-            log_id_list, files_count, act, s = show_log_menu()
-            undo_last_instance(log_id_list, files_count, act, s)
+            log_id_list, files_count, act, s = show_log_menu(log_file)
+            undo_last_instance(log_id_list, files_count, act, s, log_file)
         except KeyboardInterrupt:
             sys.exit(1)
     elif args.undo is not None:
@@ -500,7 +514,7 @@ else:
     elif args.undo is None:
         if args.logs is True:
             a = 0
-            log_id_list, files_count, act, s = show_log_menu()
+            log_id_list, files_count, act, s = show_log_menu(log_file)
             print("_"*40)
             print("Available Runs")
             print("_"*40)
@@ -511,18 +525,18 @@ else:
                 a +=1
         elif args.logs is not None:
             if isinstance(log_sr, int):
-                log_id_list, files_count, act, s = show_log_menu()
+                log_id_list, files_count, act, s = show_log_menu(log_file)
                 if log_sr > len(act)-1:
                     print("Please check the log list again by -l")
                 else:
                     ac = "Copied" if str(act[log_sr]) == "copy" else "Moved"
-                    log_sr_check(log_sr,log_id_list,files_count[log_sr],ac,s[log_sr])
+                    log_sr_check(log_sr,log_id_list,files_count[log_sr],ac,s[log_sr],log_file)
             else:
                 print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
         elif args.logs is None:
             if mode == "copy" or mode == "move":
                 on_coll = on_collision()
-                copy_move_files(d, mode, files, on_coll)
+                copy_move_files(d, mode, files, on_coll,log_file)
             else:
                 print(f"{parser.prog}: try 'python {parser.prog} --help' for more information")
                 sys.exit(1)
